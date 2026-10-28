@@ -42,3 +42,8 @@ npx playwright install chromium   # necessário só para os testes E2E
 - Em código de demonstração/teste, `setMockScenario(name)` troca o cenário; `resetMockScenario()` limpa a substituição e retorna à configuração de ambiente (ou ao padrão).
 
 As imagens são SVGs determinísticos servidos pelo próprio MSW em `/nft-art/:id.svg`, sem URLs temporárias externas.
+
+## Cenarios de carrinho
+
+- VITE_MOCK_SCENARIO=cart-resilience adiciona 900 ms de latencia as operacoes de carrinho e cotacao; cart-failure retorna 503 nesses endpoints.
+- KURIO10 aplica 10% de desconto; KURIOEXPIRED exercita cupom expirado. Outros codigos sao invalidos.

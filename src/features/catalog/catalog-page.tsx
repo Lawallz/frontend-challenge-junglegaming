@@ -10,6 +10,7 @@ import { http } from '@/shared/api/http'
 import { formatEth } from '@/shared/lib/eth'
 import { useAuth } from '@/features/auth/auth-context'
 import { FavoriteButton } from '@/features/favorites/favorite-button'
+import { cartQueryKey, getCart } from '@/features/cart/cart-api'
 
 const categories = ['Arte digital', 'Fotografia', 'Música', 'Arte 3D', 'Colecionáveis', 'Generativa', 'Jogos', 'Assinaturas', 'Utilidade']
 const networks: { label: string; value: NftNetwork }[] = [
@@ -44,6 +45,8 @@ function apiParams(query: NftListQuery) {
 
 export function CatalogPage() {
   const { session, logout } = useAuth()
+  const cartQuery = useQuery({ queryKey: cartQueryKey(session?.user.id), queryFn: getCart })
+  const cartCount = cartQuery.data?.items.reduce((total, item) => total + item.quantity, 0) ?? 0
   const searchStr = useLocation({ select: (location) => location.searchStr })
   const navigate = useNavigate({ from: '/' })
   const query = useMemo(() => parseNftListQuery(new URLSearchParams(searchStr)), [searchStr])
@@ -90,7 +93,7 @@ export function CatalogPage() {
           <nav className="desktop-nav" aria-label="Navegação principal">
             <a className="active" href="/">Início</a><a href="#catalog">Mercado</a><a href="#creators">Criadores</a><a href="#learn">Aprenda</a>
           </nav>
-          <div className="header-actions"><button aria-label="Buscar" onClick={() => document.querySelector<HTMLInputElement>('.desktop-search input')?.focus()}><Search /></button><button aria-label="Carrinho"><ShoppingCart /><i>2</i></button>{session ? <><a className="signin" href="/favorites">{session.user.displayName}</a><button className="signin" onClick={() => void logout()}>Sair</button></> : <a className="signin" href="/login">Entrar</a>}</div>
+          <div className="header-actions"><button aria-label="Buscar" onClick={() => document.querySelector<HTMLInputElement>('.desktop-search input')?.focus()}><Search /></button><Link className="cart-nav-link" to="/cart" aria-label={`Carrinho, ${cartCount} itens`}><ShoppingCart /><i>{cartCount}</i></Link>{session ? <><a className="signin" href="/favorites">{session.user.displayName}</a><button className="signin" onClick={() => void logout()}>Sair</button></> : <a className="signin" href="/login">Entrar</a>}</div>
         </header>
 
         <div className="mobile-search-row">
@@ -152,7 +155,7 @@ export function CatalogPage() {
           <p className="copyright">© 2026 Kurio. Propriedade digital para todos.</p>
         </footer>
       </div>
-      <nav className="mobile-tabbar" aria-label="Navegação mobile"><a className="tabbar-active" href="/" aria-label="Início"><Home /></a><a href={session ? '/favorites' : '/login?returnTo=%2Ffavorites'} aria-label="Favoritos"><Heart /></a><span className="tabbar-center"><Menu /></span><button aria-label="Carrinho"><ShoppingCart /></button><a href={session ? '/favorites' : '/login?returnTo=%2Ffavorites'} aria-label="Perfil"><UserRound /></a></nav>
+      <nav className="mobile-tabbar" aria-label="Navegação mobile"><Link className="tabbar-active" to="/" aria-label="Início"><Home /></Link><a href={session ? '/favorites' : '/login?returnTo=%2Ffavorites'} aria-label="Favoritos"><Heart /></a><span className="tabbar-center"><Menu /></span><Link to="/cart" aria-label={`Carrinho, ${cartCount} itens`}><ShoppingCart /></Link><a href={session ? '/favorites' : '/login?returnTo=%2Ffavorites'} aria-label="Perfil"><UserRound /></a></nav>
     </main>
   )
 }

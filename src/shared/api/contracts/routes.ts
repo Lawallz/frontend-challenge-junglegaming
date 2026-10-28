@@ -16,6 +16,7 @@ export const API_ROUTES = {
   cartItem: (nftId: string, editionId: string) =>
     `/cart/items/${encodeURIComponent(nftId)}/${encodeURIComponent(editionId)}`,
   cartCoupon: '/cart/coupon',
+  cartMerge: '/cart/merge',
 
   quotes: '/quotes',
 

@@ -1,16 +1,20 @@
-export type MockScenarioName = 'catalog-default' | 'catalog-resilience' | 'catalog-failure'
+export type MockScenarioName = 'catalog-default' | 'catalog-resilience' | 'catalog-failure' | 'cart-resilience' | 'cart-failure'
 
 export interface MockScenario {
   name: MockScenarioName
   latencyMs: number
   failCatalog: boolean
   failDetails: boolean
+  latencyCartMs: number
+  failCart: boolean
 }
 
 export const MOCK_SCENARIOS: Record<MockScenarioName, MockScenario> = {
-  'catalog-default': { name: 'catalog-default', latencyMs: 0, failCatalog: false, failDetails: false },
-  'catalog-resilience': { name: 'catalog-resilience', latencyMs: 350, failCatalog: false, failDetails: false },
-  'catalog-failure': { name: 'catalog-failure', latencyMs: 0, failCatalog: true, failDetails: true },
+  'catalog-default': { name: 'catalog-default', latencyMs: 0, failCatalog: false, failDetails: false, latencyCartMs: 0, failCart: false },
+  'catalog-resilience': { name: 'catalog-resilience', latencyMs: 350, failCatalog: false, failDetails: false, latencyCartMs: 0, failCart: false },
+  'catalog-failure': { name: 'catalog-failure', latencyMs: 0, failCatalog: true, failDetails: true, latencyCartMs: 0, failCart: false },
+  'cart-resilience': { name: 'cart-resilience', latencyMs: 0, failCatalog: false, failDetails: false, latencyCartMs: 900, failCart: false },
+  'cart-failure': { name: 'cart-failure', latencyMs: 0, failCatalog: false, failDetails: false, latencyCartMs: 0, failCart: true },
 }
 
 let scenarioOverride: MockScenarioName | undefined

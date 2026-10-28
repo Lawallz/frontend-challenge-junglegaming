@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useEffect, type ReactNode } fro
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import type { AuthResult, LoginRequest, RegisterRequest, SessionResponse } from '@/shared/api/contracts'
 import { ApiError } from '@/shared/api/errors'
+import { cartQueryKey, mergeGuestCart } from '@/features/cart/cart-api'
 import { getSession, loginAccount, logoutAccount, registerAccount } from './auth-api'
 import { clearPrivateQueryCache, clearSessionExpired, clearSessionExpiry, clearSessionToken, markSessionExpired, SESSION_QUERY_KEY, setSessionToken } from './session'
 
@@ -38,17 +39,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [handleSessionExpired, sessionQuery.error])
 
-  const acceptAuthResult = useCallback((result: AuthResult) => {
+  const acceptAuthResult = useCallback(async (result: AuthResult) => {
     clearSessionExpired()
     const previous = queryClient.getQueryData<SessionResponse | null>(SESSION_QUERY_KEY)
     if (previous?.user.id && previous.user.id !== result.user.id) clearPrivateQueryCache(queryClient)
     setSessionToken(result.accessToken, result.expiresAt)
     queryClient.setQueryData<SessionResponse>(SESSION_QUERY_KEY, { user: result.user, expiresAt: result.expiresAt })
+    try {
+      const cart = await mergeGuestCart()
+      queryClient.setQueryData(cartQueryKey(result.user.id), cart)
+    } catch {
+      queryClient.invalidateQueries({ queryKey: cartQueryKey(result.user.id) })
+    }
     return result
   }, [queryClient])
 
-  const login = useCallback(async (input: LoginRequest) => acceptAuthResult(await loginAccount(input)), [acceptAuthResult])
-  const register = useCallback(async (input: RegisterRequest) => acceptAuthResult(await registerAccount(input)), [acceptAuthResult])
+  const login = useCallback(async (input: LoginRequest) => await acceptAuthResult(await loginAccount(input)), [acceptAuthResult])
+  const register = useCallback(async (input: RegisterRequest) => await acceptAuthResult(await registerAccount(input)), [acceptAuthResult])
 
   const logout = useCallback(async () => {
     try { await logoutAccount() } catch { /* Clear local session even after the server session has expired. */ }

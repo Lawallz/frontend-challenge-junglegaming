@@ -7,7 +7,7 @@ import { API_ROUTES } from '@/shared/api/contracts'
 import { ApiError } from '@/shared/api/errors'
 import { http } from '@/shared/api/http'
 import { formatEth } from '@/shared/lib/eth'
-import { addCartItem, getCart } from '@/features/cart/cart-api'
+import { addCartItem, cartQueryKey, getCart } from '@/features/cart/cart-api'
 import { FavoriteButton } from '@/features/favorites/favorite-button'
 import { useAuth } from '@/features/auth/auth-context'
 
@@ -24,10 +24,10 @@ export function NftDetailPage() {
     queryKey: ['nft', nftId],
     queryFn: async () => (await http.get<NftDetailResponse>(API_ROUTES.nft(nftId))).data,
   })
-  const cartQuery = useQuery({ queryKey: ['cart'], queryFn: getCart })
+  const cartQuery = useQuery({ queryKey: cartQueryKey(session?.user.id), queryFn: getCart })
   const cartMutation = useMutation({
     mutationFn: addCartItem,
-    onSuccess: (cart) => queryClient.setQueryData<Cart>(['cart'], cart),
+    onSuccess: (cart) => queryClient.setQueryData<Cart>(cartQueryKey(session?.user.id), cart),
   })
   const nft = nftQuery.data
   const edition = nft?.editions.find((item) => item.id === editionId) ?? nft?.editions[0]
@@ -54,9 +54,9 @@ export function NftDetailPage() {
         <header className="desktop-header detail-desktop-header">
           <Link className="wordmark" to="/" aria-label="Kurio início">KURIO</Link>
           <nav className="desktop-nav" aria-label="Navegação principal"><Link to="/">Início</Link><a href="/#catalog">Mercado</a><a href="/#creators">Criadores</a><a href="/#learn">Aprenda</a></nav>
-          <div className="header-actions"><span className="detail-cart-link" role="status" aria-label={`Carrinho, ${cartCount} itens`}><ShoppingCart /><i>{cartCount}</i></span><a className="signin" href="/login">Entrar</a></div>
+          <div className="header-actions"><Link className="detail-cart-link" to="/cart" aria-label={`Carrinho, ${cartCount} itens`}><ShoppingCart /><i>{cartCount}</i></Link>{session ? <a className="signin" href="/favorites">{session.user.displayName}</a> : <a className="signin" href="/login">Entrar</a>}</div>
         </header>
-        <header className="detail-mobile-topbar"><Link to="/" aria-label="Voltar ao catálogo"><ArrowLeft /></Link><Link className="wordmark" to="/">KURIO</Link><span className="detail-cart-link" role="status" aria-label={`Carrinho, ${cartCount} itens`}><ShoppingCart /><i>{cartCount}</i></span></header>
+        <header className="detail-mobile-topbar"><Link to="/" aria-label="Voltar ao catálogo"><ArrowLeft /></Link><Link className="wordmark" to="/">KURIO</Link><Link className="detail-cart-link" to="/cart" aria-label={`Carrinho, ${cartCount} itens`}><ShoppingCart /><i>{cartCount}</i></Link></header>
 
         <div className="detail-breadcrumb"><Link to="/">Início</Link><span>/</span><span>Mercado</span><span>/</span><span>{nft?.collection.name ?? 'NFT'}</span><button className="detail-refresh-button" disabled={nftQuery.isFetching} onClick={() => void nftQuery.refetch()}><RefreshCw />{nftQuery.isFetching ? 'Atualizando' : 'Atualizar'}</button></div>
 
@@ -101,7 +101,7 @@ export function NftDetailPage() {
             <section className="related-section"><div className="related-heading"><div><p className="detail-eyebrow">CONTINUE EXPLORANDO</p><h2>Mais da coleção {nft.collection.name}</h2></div><Link to="/" className="related-all">Ver coleção <ArrowUpRight /></Link></div>{relatedQuery.isPending ? <div className="related-grid">{Array.from({ length: 4 }, (_, i) => <DetailRelatedSkeleton key={i} />)}</div> : relatedQuery.error ? <div className="related-inline-error">Não foi possível carregar outros itens da coleção. <button onClick={() => void relatedQuery.refetch()}>Tentar novamente</button></div> : related.length ? <div className="related-grid">{related.map((item) => <Link className="related-card" key={item.id} to="/nft/$nftId" params={{ nftId: item.id }}><img src={item.images[0]?.url} alt={item.images[0]?.alt ?? item.name} loading="lazy" /><span>{item.collection.name}</span><strong>{item.name}</strong><small>{formatEth(item.price)}</small></Link>)}</div> : <p className="related-empty">Ainda não há outros itens disponíveis nesta coleção.</p>}</section>
           </>}
       </div>
-      <nav className="mobile-tabbar detail-mobile-tabbar" aria-label="Navegação mobile"><Link className="tabbar-active" to="/" aria-label="Início"><Home /></Link><a href={favoriteHref} aria-label="Entrar para ver favoritos"><Heart /></a><span className="tabbar-center"><Menu /></span><span aria-label={`Carrinho, ${cartCount} itens`}><ShoppingCart /></span><a href="/login" aria-label="Minha conta"><UserRound /></a></nav>
+      <nav className="mobile-tabbar detail-mobile-tabbar" aria-label="Navegação mobile"><Link className="tabbar-active" to="/" aria-label="Início"><Home /></Link><a href={favoriteHref} aria-label="Entrar para ver favoritos"><Heart /></a><span className="tabbar-center"><Menu /></span><Link to="/cart" aria-label={`Carrinho, ${cartCount} itens`}><ShoppingCart /></Link><a href={session ? '/favorites' : '/login'} aria-label="Minha conta"><UserRound /></a></nav>
     </main>
   )
 }
