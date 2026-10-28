@@ -1,0 +1,10 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "overrides": [
+    {
+      "files": ["src/routes/**"],
+      "rules": { "react/only-export-components": "off" }
+    }
+  ],
+  "ignorePatterns": ["dist", "public/mockServiceWorker.js", "src/app/routeTree.gen.ts", "playwright-report", "test-results"]
+}
