@@ -147,8 +147,8 @@ export function CartPage() {
                     {quoteQuery.data.issues.map((issue, index) => <p className="cart-quote-warning" role="alert" key={`${issue.type}-${index}`}>{issue.type === 'UNAVAILABLE' ? `Estoque atualizado: apenas ${issue.available} unidades disponíveis.` : issue.type === 'PRICE_CHANGED' ? 'O preço desta peça foi atualizado. Revise a cotação antes de continuar.' : issue.type === 'COUPON_EXPIRED' ? `O cupom ${issue.code} expirou.` : `O cupom ${issue.code} é inválido.`}</p>)}
                     <div className="cart-summary-total"><span>Total estimado</span><strong>{formatEth(quoteQuery.data.total)}</strong></div>
                   </>}
-                  <button className="cart-checkout-button" disabled title="O checkout será disponibilizado na próxima etapa">Checkout em breve</button>
-                  <p className="cart-checkout-note">O pagamento ainda não está disponível. Seus itens ficam salvos no carrinho.</p>
+                  <Link className="cart-checkout-button" to="/checkout" aria-disabled={!quoteQuery.data || quoteQuery.isPending || quoteQuery.data.issues.some((issue) => issue.type === 'UNAVAILABLE' || issue.type === 'PRICE_CHANGED')}>Continuar para checkout</Link>
+                  <p className="cart-checkout-note">O pedido será registrado como pendente. Nenhum pagamento será processado.</p>
                 </aside>
               </div>}
       </div>

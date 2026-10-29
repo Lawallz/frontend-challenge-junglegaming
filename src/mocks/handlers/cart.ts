@@ -7,10 +7,12 @@ import { nftFixtures } from '../fixtures/nfts'
 import { resolveMockSession } from './auth'
 
 export const MOCK_CART_STORAGE_KEY = 'kurio:mock:carts:v1'
+export const MOCK_QUOTES_STORAGE_KEY = 'kurio:mock:quotes:v1'
 const emptyCart = (): Cart => ({ items: [], couponCode: null, version: 0 })
 const validCoupons: Record<string, 'KURIO10'> = { KURIO10: 'KURIO10' }
 const expiredCoupons = new Set(['KURIOEXPIRED'])
 let memoryCarts: Record<string, Cart> = {}
+let memoryQuotes: Record<string, Record<string, Quote>> = {}
 
 function readCartStore(): Record<string, Cart> {
   try {
@@ -30,7 +32,42 @@ function writeCartStore(store: Record<string, Cart>): void {
 
 export function resetMockCart(): void {
   memoryCarts = {}
-  try { if (typeof localStorage !== 'undefined') localStorage.removeItem(MOCK_CART_STORAGE_KEY) } catch { /* no-op */ }
+  memoryQuotes = {}
+  try {
+    if (typeof localStorage !== 'undefined') {
+      localStorage.removeItem(MOCK_CART_STORAGE_KEY)
+      localStorage.removeItem(MOCK_QUOTES_STORAGE_KEY)
+    }
+  } catch { /* no-op */ }
+}
+
+export function getMockCart(scope: string): Cart {
+  return cartFor(scope)
+}
+
+export function clearMockCart(scope: string): Cart {
+  const cart = cartFor(scope)
+  return storeCart(scope, { ...emptyCart(), version: cart.version + 1 })
+}
+
+function readQuoteStore(): Record<string, Record<string, Quote>> {
+  try {
+    const raw = typeof localStorage === 'undefined' ? null : localStorage.getItem(MOCK_QUOTES_STORAGE_KEY)
+    if (raw) return JSON.parse(raw) as Record<string, Record<string, Quote>>
+  } catch { /* Unit tests use the in-memory store. */ }
+  return memoryQuotes
+}
+
+export function getIssuedQuote(scope: string, id: string): Quote | undefined {
+  return readQuoteStore()[scope]?.[id]
+}
+
+function registerQuote(scope: string, quote: Quote): void {
+  const store = readQuoteStore()
+  store[scope] ??= {}
+  store[scope][quote.id] = quote
+  memoryQuotes = store
+  try { if (typeof localStorage !== 'undefined') localStorage.setItem(MOCK_QUOTES_STORAGE_KEY, JSON.stringify(store)) } catch { /* Keep quote available in memory. */ }
 }
 
 function cartError(status: number, code: ApiErrorBody['code'], message: string, details?: Record<string, unknown>): HttpResponse<ApiErrorBody> {
@@ -57,6 +94,7 @@ function resolveLine(nftId: string, editionId: string, quantity: number): CartIt
   const nft = nftFixtures.find((item) => item.id === nftId)
   const edition = nft?.editions.find((item) => item.id === editionId)
   if (!nft || !edition) return undefined
+  const available = getScenario().stockChanged && nftId === 'nft-005' && editionId === 'nft-005-edition-2' ? 1 : edition.available
   return {
     nftId: nft.id,
     editionId: edition.id,
@@ -67,7 +105,7 @@ function resolveLine(nftId: string, editionId: string, quantity: number): CartIt
     imageAlt: nft.images[0]?.alt ?? nft.name,
     editionLabel: edition.label,
     unitPrice: nft.price,
-    available: edition.available,
+    available,
   }
 }
 
@@ -84,6 +122,43 @@ function isUpdate(input: unknown): input is UpdateCartItemRequest {
   if (!input || typeof input !== 'object') return false
   const quantity = (input as UpdateCartItemRequest).quantity
   return Number.isSafeInteger(quantity) && quantity >= 1
+}
+
+export function createMockQuote(scope: string, input: QuoteRequest, register = true): Quote {
+  const cart = cartFor(scope)
+  const issues: Quote['issues'] = []
+  const lines = cart.items.flatMap((item) => {
+    const current = resolveLine(item.nftId, item.editionId, item.quantity)
+    if (!current) return []
+    if (item.quantity > current.available) issues.push({ type: 'UNAVAILABLE', nftId: item.nftId, editionId: item.editionId, requested: item.quantity, available: current.available })
+    if (item.unitPrice !== current.unitPrice) issues.push({ type: 'PRICE_CHANGED', nftId: item.nftId, editionId: item.editionId, previousUnitPrice: item.unitPrice, unitPrice: current.unitPrice })
+    return [{ nftId: item.nftId, editionId: item.editionId, quantity: item.quantity, unitPrice: current.unitPrice, lineTotal: mulEthByQuantity(current.unitPrice, item.quantity) }]
+  })
+  const subtotal = sumEth(lines.map((line) => line.lineTotal))
+  const couponCode = input.couponCode?.trim().toUpperCase() || cart.couponCode
+  let discount = ZERO_ETH
+  if (couponCode && expiredCoupons.has(couponCode)) issues.push({ type: 'COUPON_EXPIRED', code: couponCode })
+  else if (couponCode && !validCoupons[couponCode]) issues.push({ type: 'COUPON_INVALID', code: couponCode })
+  else if (couponCode && couponCode === 'KURIO10') discount = normalizeEth(parseEth(subtotal).mul('0.10').toFixed())
+  const afterDiscount = subEth(subtotal, discount)
+  const feeTable: Record<QuoteRequest['network'], string> = { 'ethereum-mainnet': '0.016', polygon: '0.001', arbitrum: '0.002', optimism: '0.002', base: '0.002' }
+  const networkFee = lines.length ? normalizeEth(feeTable[input.network]) : ZERO_ETH
+  const quote: Quote = {
+    id: `quote-${crypto.randomUUID()}`,
+    createdAt: new Date().toISOString(),
+    expiresAt: new Date(Date.now() + 5 * 60_000).toISOString(),
+    network: input.network,
+    lines,
+    subtotal,
+    discount,
+    networkFee,
+    total: addEth(afterDiscount, networkFee),
+    couponCode: couponCode && !issues.some((issue) => issue.type === 'COUPON_INVALID' || issue.type === 'COUPON_EXPIRED') ? couponCode : null,
+    issues,
+    cartVersion: cart.version,
+  }
+  if (register) registerQuote(scope, quote)
+  return quote
 }
 
 export const cartHandlers = [
@@ -216,38 +291,7 @@ export const cartHandlers = [
     try { input = await request.json() as QuoteRequest } catch { return cartError(400, 'VALIDATION_ERROR', 'Informe a rede para calcular a cotação.') }
     const allowedNetworks: QuoteRequest['network'][] = ['ethereum-mainnet', 'polygon', 'arbitrum', 'optimism', 'base']
     if (!input || !allowedNetworks.includes(input.network)) return cartError(400, 'VALIDATION_ERROR', 'Selecione uma rede válida.')
-    const cart = cartFor(scope)
-    const issues: Quote['issues'] = []
-    const lines = cart.items.flatMap((item) => {
-      const current = resolveLine(item.nftId, item.editionId, item.quantity)
-      if (!current) return []
-      if (item.quantity > current.available) issues.push({ type: 'UNAVAILABLE', nftId: item.nftId, editionId: item.editionId, requested: item.quantity, available: current.available })
-      if (item.unitPrice !== current.unitPrice) issues.push({ type: 'PRICE_CHANGED', nftId: item.nftId, editionId: item.editionId, previousUnitPrice: item.unitPrice, unitPrice: current.unitPrice })
-      return [{ nftId: item.nftId, editionId: item.editionId, quantity: item.quantity, unitPrice: current.unitPrice, lineTotal: mulEthByQuantity(current.unitPrice, item.quantity) }]
-    })
-    const subtotal = sumEth(lines.map((line) => line.lineTotal))
-    const couponCode = input.couponCode?.trim().toUpperCase() || cart.couponCode
-    let discount = ZERO_ETH
-    if (couponCode && expiredCoupons.has(couponCode)) issues.push({ type: 'COUPON_EXPIRED', code: couponCode })
-    else if (couponCode && !validCoupons[couponCode]) issues.push({ type: 'COUPON_INVALID', code: couponCode })
-    else if (couponCode && couponCode === 'KURIO10') discount = normalizeEth(parseEth(subtotal).mul('0.10').toFixed())
-    const afterDiscount = subEth(subtotal, discount)
-    const feeTable: Record<QuoteRequest['network'], string> = { 'ethereum-mainnet': '0.016', polygon: '0.001', arbitrum: '0.002', optimism: '0.002', base: '0.002' }
-    const networkFee = lines.length ? normalizeEth(feeTable[input.network]!) : ZERO_ETH
-    const quote: Quote = {
-      id: `quote-${crypto.randomUUID()}`,
-      createdAt: new Date().toISOString(),
-      expiresAt: new Date(Date.now() + 5 * 60_000).toISOString(),
-      network: input.network,
-      lines,
-      subtotal,
-      discount,
-      networkFee,
-      total: addEth(afterDiscount, networkFee),
-      couponCode: couponCode && !issues.some((issue) => issue.type === 'COUPON_INVALID' || issue.type === 'COUPON_EXPIRED') ? couponCode : null,
-      issues,
-      cartVersion: cart.version,
-    }
+    const quote = createMockQuote(scope, input)
     return HttpResponse.json(quote)
   }),
 ]

@@ -9,5 +9,7 @@ import { authHandlers } from './auth'
 import { cartHandlers } from './cart'
 import { favoriteHandlers } from './favorites'
 import { nftHandlers } from './nfts'
+import { orderHandlers } from './orders'
+import { walletHandlers } from './wallets'
 
-export const handlers: RequestHandler[] = [...authHandlers, ...favoriteHandlers, ...nftHandlers, ...cartHandlers, ...assetHandlers]
+export const handlers: RequestHandler[] = [...authHandlers, ...favoriteHandlers, ...nftHandlers, ...cartHandlers, ...walletHandlers, ...orderHandlers, ...assetHandlers]
