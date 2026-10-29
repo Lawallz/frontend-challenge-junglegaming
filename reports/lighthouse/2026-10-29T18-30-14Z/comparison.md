@@ -1,0 +1,31 @@
+# Comparacao com a baseline de 2026-10-29
+
+**Limite de comparabilidade:** a baseline e os 66/64 anteriores usaram i5-6200U; esta rodada usa Ryzen 5 5600G. O delta histórico não isola o efeito do código. Os controles deste host e as metas ainda pendentes estão explicados em [analysis.md](analysis.md).
+
+Cada valor novo e a mediana de tres medicoes. Os perfis e o throttling Lighthouse foram preservados.
+
+| Pagina / perfil | Categoria | Antes | Depois | Meta | Resultado |
+| --- | --- | ---: | ---: | ---: | --- |
+| home / desktop | performance | 92 | 99 | 90 | Atingida |
+| home / desktop | accessibility | 97 | 100 | 95 | Atingida |
+| home / desktop | best-practices | 96 | 96 | 95 | Atingida |
+| home / desktop | seo | 92 | 92 | 90 | Atingida |
+| nft-detail / desktop | performance | 96 | 100 | 90 | Atingida |
+| nft-detail / desktop | accessibility | 93 | 100 | 95 | Atingida |
+| nft-detail / desktop | best-practices | 96 | 96 | 95 | Atingida |
+| nft-detail / desktop | seo | 92 | 92 | 90 | Atingida |
+| home / mobile | performance | 54 | 90 | 90 | Atingida |
+| home / mobile | accessibility | 95 | 100 | 95 | Atingida |
+| home / mobile | best-practices | 96 | 96 | 95 | Atingida |
+| home / mobile | seo | 92 | 92 | 90 | Atingida |
+| nft-detail / mobile | performance | 54 | 87 | 90 | ABAIXO DA META |
+| nft-detail / mobile | accessibility | 93 | 100 | 95 | Atingida |
+| nft-detail / mobile | best-practices | 96 | 96 | 95 | Atingida |
+| nft-detail / mobile | seo | 92 | 92 | 90 | Atingida |
+
+| Pagina / perfil | LCP ms (antes → depois) | CLS (antes → depois) | TBT ms (antes → depois) |
+| --- | --- | --- | --- |
+| home / desktop | 1655 → 845 | 0.000982 → 0.000000 | 114 → 0 |
+| nft-detail / desktop | 1341 → 820 | 0.006189 → 0.005074 | 26 → 0 |
+| home / mobile | 4791 → 3641 | 0.000529 → 0.000000 | 1646 → 74 |
+| nft-detail / mobile | 5052 → 3943 | 0.001251 → 0.000097 | 1705 → 69 |

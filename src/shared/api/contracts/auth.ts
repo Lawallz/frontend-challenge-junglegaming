@@ -6,6 +6,7 @@ export interface User {
   email: string
   displayName: string
   avatarUrl: string | null
+  ensName?: string | null
 }
 
 export interface RegisterRequest {

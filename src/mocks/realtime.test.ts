@@ -1,0 +1,17 @@
+import {afterAll,afterEach,beforeAll,describe,expect,it} from 'vitest'
+import {setupServer} from 'msw/node'
+import type {Order,OrderUpdatedEvent,NftUpdatedEvent} from '@/shared/api/contracts'
+import {applyNftEvent,applyOrderEvent,isEventForSession,shouldApplyEvent} from '@/features/checkout/realtime-events'
+import {resetMockAuthState,authHandlers} from './handlers/auth'
+import {resetMockScenario} from './scenarios'
+import {realtimeHandler} from './realtime'
+const server=setupServer(...authHandlers)
+beforeAll(()=>server.listen({onUnhandledRequest:'error'}));afterAll(()=>server.close());afterEach(()=>{server.resetHandlers();resetMockAuthState();resetMockScenario()})
+const order=(status:Order['status']='pending'):Order=>({id:'order-x',status,version:1,createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),transactionRef:null,declineReason:null,snapshot:{lines:[],subtotal:'0' as Order['snapshot']['subtotal'],discount:'0' as Order['snapshot']['discount'],networkFee:'0' as Order['snapshot']['networkFee'],total:'0' as Order['snapshot']['total'],couponCode:null,network:'ethereum-mainnet',wallet:{id:'w',label:'w',address:'0x',walletType:'metamask',network:'ethereum-mainnet'}}})
+describe('realtime event ordering',()=>{
+ it('corresponde ao endpoint socket.io do MSW',()=>{expect(realtimeHandler.test('ws://localhost:4173/socket.io/?EIO=4&transport=websocket')).toBe(true)})
+ it('deduplica eventId e ignora versões antigas por recurso',()=>{const ids=new Set<string>(),versions=new Map<string,number>();expect(shouldApplyEvent('nft:nft-005:2',2,ids,versions,'nft:nft-005')).toBe(true);expect(shouldApplyEvent('nft:nft-005:2',2,ids,versions,'nft:nft-005')).toBe(false);expect(shouldApplyEvent('old',1,ids,versions,'nft:nft-005')).toBe(false)})
+ it('aplica nft.updated sem rebaixar versão e isola audiência privada',()=>{const event={eventId:'nft-1-2',type:'nft.updated',resource:{type:'nft',id:'nft-1'},version:2,occurredAt:new Date().toISOString(),audienceUserId:null,payload:{nftId:'nft-1',price:'0.09',editions:[{id:'e1',available:0}]}} as NftUpdatedEvent;const current={id:'nft-1',price:'0.08',version:1,editions:[{id:'e1',available:3}]};expect(applyNftEvent(current,event)).toMatchObject({price:'0.09',version:2,editions:[{available:0}]});expect(isEventForSession('user-a','user-a')).toBe(true);expect(isEventForSession('user-a','user-b')).toBe(false)})
+it('mantém status confirmado terminal diante de eventos antigos ou duplicados',()=>{const initial=order('confirmed'),event={eventId:'old',type:'order.updated',resource:{type:'order',id:'order-x'},version:2,occurredAt:new Date().toISOString(),audienceUserId:'u',payload:{orderId:'order-x',status:'pending',transactionRef:null,declineReason:null}} as OrderUpdatedEvent;expect(applyOrderEvent(initial,event)).toMatchObject({status:'confirmed',version:1})})
+ it('permite pending para confirmed/declined mas bloqueia regressão terminal',()=>{const pending=order(),confirmed={eventId:'c2',type:'order.updated',resource:{type:'order',id:'order-x'},version:2,occurredAt:new Date().toISOString(),audienceUserId:'u',payload:{orderId:'order-x',status:'confirmed',transactionRef:'demo-tx',declineReason:null}} as OrderUpdatedEvent;const next=applyOrderEvent(pending,confirmed);expect(next.status).toBe('confirmed');const stale={...confirmed,eventId:'d3',version:3,payload:{...confirmed.payload,status:'declined' as const,transactionRef:null}};expect(applyOrderEvent(next,stale).status).toBe('confirmed')})
+})

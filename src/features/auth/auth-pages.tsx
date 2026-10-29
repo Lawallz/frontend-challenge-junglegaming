@@ -49,13 +49,13 @@ export function AuthPage({ mode, returnTo, reason }: { mode: AuthMode; returnTo:
         <h1 id="auth-title">{isLogin ? 'Bem-vindo de volta' : 'Crie sua conta Kurio'}</h1>
         <p className="auth-subtitle">{isLogin ? 'Entre para acompanhar sua coleção e seus favoritos.' : 'Junte-se a uma comunidade que coleciona cultura.'}</p>
         {reason === 'expired' && <p className="auth-notice" role="status">Sua sessão expirou. Entre novamente para continuar.</p>}
-        {error && <p className="auth-error" role="alert">{error}</p>}
+        {error && <p id="auth-error" className="auth-error" role="alert">{error}</p>}
 
         <form className="auth-form" onSubmit={(event) => void submit(event)}>
-          {!isLogin && <label>Nome de usuário<span className="auth-input"><UserRound /><input autoComplete="username" minLength={3} required value={username} onChange={(event) => setUsername(event.target.value)} placeholder="Seu nome" /></span></label>}
-          <label>E-mail<span className="auth-input"><Mail /><input type="email" autoComplete="email" required value={email} onChange={(event) => setEmail(event.target.value)} placeholder="voce@exemplo.com" /></span></label>
-          <label>Senha<span className="auth-input"><LockKeyhole /><input type="password" autoComplete={isLogin ? 'current-password' : 'new-password'} minLength={8} required value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Pelo menos 8 caracteres" /></span></label>
-          {!isLogin && <label>Confirme sua senha<span className="auth-input"><LockKeyhole /><input type="password" autoComplete="new-password" minLength={8} required value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} placeholder="Repita sua senha" /></span></label>}
+          {!isLogin && <label htmlFor="auth-username">Nome de usuário<span className="auth-input"><UserRound /><input id="auth-username" aria-describedby={error ? 'auth-error' : undefined} aria-invalid={Boolean(error)} autoComplete="username" minLength={3} required value={username} onChange={(event) => setUsername(event.target.value)} placeholder="Seu nome" /></span></label>}
+          <label htmlFor="auth-email">E-mail<span className="auth-input"><Mail /><input id="auth-email" aria-describedby={error ? 'auth-error' : undefined} aria-invalid={Boolean(error)} type="email" autoComplete="email" required value={email} onChange={(event) => setEmail(event.target.value)} placeholder="voce@exemplo.com" /></span></label>
+          <label htmlFor="auth-password">Senha<span className="auth-input"><LockKeyhole /><input id="auth-password" aria-describedby={error ? 'auth-error' : undefined} aria-invalid={Boolean(error)} type="password" autoComplete={isLogin ? 'current-password' : 'new-password'} minLength={8} required value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Pelo menos 8 caracteres" /></span></label>
+          {!isLogin && <label htmlFor="auth-confirm-password">Confirme sua senha<span className="auth-input"><LockKeyhole /><input id="auth-confirm-password" aria-describedby={error ? 'auth-error' : undefined} aria-invalid={Boolean(error)} type="password" autoComplete="new-password" minLength={8} required value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} placeholder="Repita sua senha" /></span></label>}
           <button className="auth-submit" type="submit" disabled={pending}>{pending ? 'Aguarde…' : isLogin ? 'Entrar na Kurio' : 'Criar conta'}<ArrowRight /></button>
         </form>
 

@@ -1,19 +1,19 @@
-import { StrictMode } from 'react'
-import { createRoot } from 'react-dom/client'
 import { enableMocks } from '@/mocks/enable-mocks'
-import { AppProviders } from './providers'
-import { createQueryClient } from './query-client'
-import { createAppRouter } from './router'
 import './styles/globals.css'
 
-const queryClient = createQueryClient()
-const router = createAppRouter(queryClient)
+// The homepage hero is a static design asset; start its responsive request before
+// loading the catalog module. Other routes do not download an unused hero.
+if (window.location.pathname === '/') {
+  const hero = document.createElement('link')
+  hero.rel = 'preload'
+  hero.as = 'image'
+  hero.href = '/nft-art/figma-ape-green-640.webp'
+  hero.imageSrcset = [320, 640, 1024].map(width => `/nft-art/figma-ape-green-${width}.webp ${width}w`).join(', ')
+  hero.imageSizes = '(max-width: 767px) 160px, 282px'
+  hero.fetchPriority = 'high'
+  document.head.append(hero)
+}
 
-// Os mocks precisam estar prontos antes da primeira requisição.
-enableMocks().then(() => {
-  createRoot(document.getElementById('root')!).render(
-    <StrictMode>
-      <AppProviders queryClient={queryClient} router={router} />
-    </StrictMode>,
-  )
-})
+// Fetch application code and install interceptors concurrently. Rendering and
+// all REST/Socket.IO requests still wait for MSW to become ready.
+Promise.all([enableMocks(), import('./render')]).then(([, { renderApp }]) => renderApp())

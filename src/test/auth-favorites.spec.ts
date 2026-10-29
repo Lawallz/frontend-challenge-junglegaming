@@ -66,6 +66,7 @@ test('sessão expirada encaminha ao login com aviso', async ({ page }) => {
     const state = JSON.parse(raw)
     state.sessions[token].expiresAt = new Date(0).toISOString()
     localStorage.setItem('kurio:mock:auth:v1', JSON.stringify(state))
+    sessionStorage.setItem('kurio:session-expires-at', new Date(0).toISOString())
   })
   await page.goto('/favorites')
   await expect(page).toHaveURL(/\/login\?returnTo=%2Ffavorites&reason=expired/)

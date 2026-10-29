@@ -36,7 +36,9 @@ export const nftFixtures: Nft[] = seeds.map((seed, index) => ({
   price: seed.price as EthAmount,
   previousPrice: null,
   images: [{ id: `${seed.id}-image`, url: `/nft-art/${['figma-ape-green.png', 'figma-ape-violet.png', 'figma-ape-sage.png', 'figma-ape-gold.png'][index % 4]}`, alt: `${seed.name}, obra de ${seed.category.toLowerCase()}` }],
-  editions: [{ id: `${seed.id}-edition-1`, label: '1/1', supply: 1, available: index % 7 === 0 ? 0 : 1 }],
+  editions: index === 4
+    ? [{ id: `${seed.id}-edition-1`, label: '1/1', supply: 1, available: 1 }, { id: `${seed.id}-edition-2`, label: 'Edição aberta', supply: 3, available: 3 }]
+    : [{ id: `${seed.id}-edition-1`, label: '1/1', supply: 1, available: index % 7 === 0 ? 0 : 1 }],
   attributes: [seed.category, seed.collection],
   rarity: null,
   rating: { average: 4.5 + (index % 5) / 10, count: 12 + index * 3 },

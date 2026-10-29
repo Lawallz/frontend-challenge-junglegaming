@@ -59,9 +59,44 @@
 - `GET /nfts` filtra por `q`, `tab`, `collection` repetido, preços ETH, `network` repetido e ordenação; só depois pagina. Empates usam id como chave estável. `total` e `totalPages` refletem o resultado filtrado. `GET /nfts/:id` resolve ID direto; item ausente retorna 404 `NOT_FOUND`.
 - Axios usa `serializeNftListQuery` para arrays do catálogo; MSW usa o parser correspondente. Coleções/redes são deduplicadas e ordenadas na serialização. Valores ETH inválidos e enums desconhecidos são omitidos; paginação inválida vira página 1 e tamanho 12 (tamanho válido: 1–100).
 - `VITE_MOCK_SCENARIO=catalog-default|catalog-resilience|catalog-failure` seleciona respostas sem latência, 350 ms de latência ou falha 503, respectivamente. `setMockScenario` e `resetMockScenario` permitem seleção/reset em testes ou demos; sem override, vale a configuração de ambiente.
-- A etapa não implementa UI, autenticação, carrinho, Socket.IO funcional ou checkout. Os handlers disponíveis cobrem apenas catálogo e assets.
+- O catálogo, autenticação, favoritos, carrinho, checkout, pedidos, perfil e carteiras estão implementados com dados de demonstração via MSW. Pagamento e conexão blockchain reais não fazem parte do projeto.
 
 ## Limitações conhecidas
 
-- Browsers do Playwright não foram baixados no ambiente de desenvolvimento; rodar `npx playwright install chromium` localmente. Nenhum teste E2E existe ainda.
-- Windows: os scripts usam `cross-env`, mas a execução foi verificada apenas em Linux.
+- Os testes E2E usam Playwright em Chromium desktop e mobile; instale os browsers com `npx playwright install chromium` se ainda não estiverem disponíveis.
+- Windows: lint, typecheck, unitários, Playwright com um worker, build demo e auditoria foram verificados nesta rodada. O Lighthouse instalado exige Node >= 22.19; a medição usou Node 24.15.0. No PowerShell, `npm.cmd run test:e2e -- --workers=1` repassa o argumento sem o problema observado no wrapper `npm.ps1` deste ambiente.
+
+## Perfil, pedidos e carteiras
+
+- Perfil usa `GET/PUT /profile`; a atualiza��o valida unicidade de e-mail/usu�rio e atualiza tamb�m a sess�o em cache ap�s resposta confirmada.
+- `GET /orders` lista pedidos paginados do usu�rio autenticado. A consulta e o detalhe usam o prefixo de propriet�rio na chave do mock; IDs de outro usu�rio retornam 404.
+- Carteiras usam `GET/POST/DELETE /wallets` e `PATCH /wallets/:id/default`. O campo existente `role` representa a carteira padr�o (`primary`); ao remover a principal, a primeira restante � promovida.
+- Os cen�rios `account-resilience` e `account-failure` exercitam lat�ncia e falha nos endpoints de perfil. Nenhum segredo ou conex�o externa � usado.
+
+- Perfil e carteiras foram implementados com os tokens Kurio existentes. Não houve comparação visual direta com os frames do Figma nesta etapa.
+
+## Socket.IO e ciclo do pedido
+
+- `src/mocks/realtime.ts` liga `ws.link` ao `socket.io-client` pelo `@mswjs/socket.io-binding`; os handlers REST mantêm fixtures/carrinho/pedidos coerentes. O cliente é importado após o MSW iniciar, para o interceptor de WebSocket já estar instalado.
+- `RealtimeSync` assina NFTs presentes em consultas ativas de catálogo/detalhe/carrinho e pedidos do usuário. `eventId` e versão filtram duplicatas/ordem antiga; a audiência privada é verificada contra a sessão. O cleanup remove listeners/subscriptions e impede atualizações depois de trocar ou encerrar sessão.
+- Reconnect reconcilia recursos ativos por GET REST. A versão REST de um pedido confirmado/recusado é terminal; a cotação REST e o endpoint de criação validam novamente preço/edição. Uma alteração de preço pede confirmação explícita antes de habilitar novo envio.
+- Os cenários `realtime-*`, ativação/reset e limitações da ponte estão descritos no README. Conexão de carteira e pagamento são estados locais simulados, sem transações externas.
+
+## Auditoria Lighthouse
+
+- `npm run audit:lighthouse` cria o build otimizado com MSW (`catalog-default`), serve-o em loopback e mede `/` e `/nft/nft-005` nos presets desktop e mobile, com três navegações frias sequenciais por combinação.
+- A configuração reproduzível está em `scripts/lighthouse-audit.config.json`; o runner em `scripts/lighthouse-audit.mjs` reutiliza Lighthouse e Chromium já instalados e não adiciona dependências.
+- `reports/lighthouse/<timestamp-UTC>/` guarda 12 pares HTML/JSON, configuração, ambiente, resumo e comparação com a baseline intacta de `2026-10-29/`. Scores são escalados para 0–100; LCP/TBT ficam em milissegundos e CLS sem unidade. O resumo mantém as três amostras e medianas, sem aceitar métricas ausentes ou séries incompletas.
+- Metas do desafio: Performance ≥ 90, Accessibility ≥ 95, Best Practices ≥ 95 e SEO ≥ 90 em cada combinação. `comparison.md` mostra resultados e metas não atingidas. Os presets, throttling simulado e cenário padrão foram preservados; CPU/carga do host ainda afetam os valores.
+- Bootstrap: `main.tsx` instala MSW e carrega `render.tsx` em paralelo; o registro do service worker também começa cedo. A renderização só inicia com os interceptores prontos, inclusive para Socket.IO. O detalhe usa prefetch REST deduplicado pelo mesmo `nftDetailQuery` consumido pela página.
+- MSW: despacho por grupo carrega os handlers originais sob demanda, mantendo estado compartilhado, autenticação, idempotência e persistência. Arquivos reais em `/assets`, `/fonts` e PNG/WebP em `/nft-art` passam diretamente ao servidor local; SVGs gerados, APIs e Socket.IO continuam interceptados. Logs detalhados ficam ligados em desenvolvimento e desativados no build otimizado. A implementação Socket.IO carrega o atualizador de pedidos ao assinar um pedido e descarta assinaturas removidas durante o import.
+- Assets: originais PNG preservados com variantes WebP responsivas; `NftArtwork` conserva URLs não reconhecidas da API. Roboto Mono mantém pesos/subsets e licença OFL, agora locais. Não houve nova comparação Figma; snapshots existentes validam a preservação de layout e rasterização sem afrouxar tolerâncias.
+
+- Favoritos: `FavoriteButton` preserva os estados de sessão/carregamento e o link de login com retorno seguro. O componente interno autenticado monta os hooks de query/mutation somente quando existe sessão, evitando observadores desabilitados em cada card para visitantes. Cache por usuário, mutations, invalidação e tratamento de sessão expirada continuam iguais.
+- Dimensionamento de imagens: o `sizes` do catálogo mobile representa duas colunas com 48 px de padding e 11 px de gap; o hero secundário declara seus 77/146 px e as miniaturas do detalhe seus 70 px reais. As promoções fora da área visível usam lazy loading nativo. Os PNGs/WebPs e sua qualidade não foram modificados.
+
+## Acessibilidade e telas
+
+- `src/test/visual.spec.ts` registra snapshots de inicio, detalhe, carrinho e checkout nos viewports 390, 768 e 1440 px e verifica ausencia de overflow horizontal nas rotas principais, incluindo conta e confirmacao.
+- `src/test/visual.spec.ts-snapshots/` e o baseline visual versionado. Atualizar somente com `npm run test:e2e -- src/test/visual.spec.ts --update-snapshots` apos revisar mudancas intencionais.
+- Estilos globais exibem foco de teclado e respeitam `prefers-reduced-motion`; o drawer de filtros mobile implementa foco inicial, contencao por Tab, Escape e retorno ao acionador. Os snapshots toleram diferenca de ate 1.5% dos pixels para variacao de rasterizacao. Isso nao equivale a auditoria WCAG completa.
