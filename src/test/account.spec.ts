@@ -31,6 +31,6 @@ test('histórico trata lista vazia e abre a confirmação de um pedido próprio'
  await page.goto('/nft/nft-005');await page.getByLabel('Edição').selectOption('nft-005-edition-2');await page.getByRole('button',{name:'Adicionar ao carrinho'}).click();await expect(page.getByText('Item adicionado ao carrinho.')).toBeVisible()
  await page.goto('/checkout');await expect(page.getByRole('heading',{name:'Finalizar pedido'})).toBeVisible()
   await page.goto('/wallets');await page.getByLabel('Nome',{exact:true}).fill('Carteira do histórico');await page.getByLabel('Endereço').fill('0x'+'3'.repeat(40));const response=page.waitForResponse(x=>x.url().includes('/wallets')&&x.request().method()==='POST');await page.getByRole('button',{name:'Adicionar carteira'}).click();expect((await response).status()).toBe(201);await page.goto('/checkout')
- await page.getByRole('button',{name:'Confirmar pedido'}).click();await expect(page.getByRole('heading',{name:'Seu pedido foi recebido'})).toBeVisible()
- await page.goto('/orders');await expect(page.locator('.account-order')).toHaveCount(1);await page.getByRole('link',{name:'Ver pedido'}).click();await expect(page.getByRole('heading',{name:'Seu pedido foi recebido'})).toBeVisible()
+ await page.getByRole('button',{name:'Confirmar pedido'}).click();await expect(page.getByRole('heading',{name:'Aguardando confirmação'})).toBeVisible()
+ await page.goto('/orders');await expect(page.locator('.account-order')).toHaveCount(1);await page.getByRole('link',{name:'Ver pedido'}).click();await expect(page.getByRole('heading',{name:'Aguardando confirmação'})).toBeVisible()
 })

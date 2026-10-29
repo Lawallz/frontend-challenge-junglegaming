@@ -772,3 +772,5 @@
 @media(max-width:420px){.account-shell{padding-left:16px;padding-right:16px}.account-form{padding:16px}.account-form-row{grid-template-columns:1fr}.account-order,.account-wallet{gap:12px;padding:13px}.account-order>div:nth-child(2){text-align:left}.account-mobile-tabs a{font-size:7px}}
 
 @media(max-width:900px){.account-mobile-logout{display:inline-flex;align-items:center;border:1px solid var(--line-soft);padding:7px 9px;background:transparent;color:#c5a37e;font-size:8px}.account-shell .checkout-mobile-header>span{margin-left:auto;margin-right:9px}}
+
+.wallet-simulation{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:14px;padding-top:12px;border-top:1px solid #342117}.wallet-simulation p,.wallet-simulation small{width:100%;margin:0;color:#b19373;font-size:9px}.wallet-simulation button{border:1px solid #684124;padding:7px 9px;background:transparent;color:#e5b47f;font-size:8px;cursor:pointer}

@@ -1,5 +1,5 @@
-import type {RequestHandler} from 'msw'
 import {assetHandlers} from './assets'
+import {realtimeHandler} from '../realtime'
 import {authHandlers} from './auth'
 import {profileHandlers} from './profile'
 import {profileExtraHandlers} from './profile-extra'
@@ -9,4 +9,4 @@ import {cartHandlers} from './cart'
 import {walletHandlers} from './wallets'
 import {orderHandlers} from './orders'
 import {accountDataHandlers} from './account-data'
-export const handlers:RequestHandler[]=[...authHandlers,...profileHandlers,...profileExtraHandlers,...favoriteHandlers,...nftHandlers,...cartHandlers,...walletHandlers,...accountDataHandlers,...orderHandlers,...assetHandlers]
+export const handlers=[...authHandlers,...profileHandlers,...profileExtraHandlers,...favoriteHandlers,...nftHandlers,...cartHandlers,...walletHandlers,...accountDataHandlers,...orderHandlers,...assetHandlers,realtimeHandler]

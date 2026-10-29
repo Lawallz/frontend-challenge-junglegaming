@@ -172,7 +172,7 @@ export const cartHandlers = [
     const cart = cartFor(scope, store)
     const currentLines = cart.items.flatMap((item) => {
       const current = resolveLine(item.nftId, item.editionId, item.quantity)
-      return current ? [current] : []
+      return current ? [{ ...current, unitPrice: item.unitPrice }] : []
     })
     const currentCart = { ...cart, items: currentLines }
     if (currentLines.length !== cart.items.length || currentLines.some((item, index) => item.available !== cart.items[index]?.available)) storeCart(scope, currentCart, store)

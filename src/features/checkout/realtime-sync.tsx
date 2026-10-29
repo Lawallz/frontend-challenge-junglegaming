@@ -1,0 +1,20 @@
+import { useEffect } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
+import type { NftUpdatedEvent,OrderUpdatedEvent,SubscriptionTarget } from '@/shared/api/contracts'
+import { useAuth } from '@/features/auth/auth-context'
+import { getSessionToken } from '@/features/auth/session'
+import { cartQueryKey } from '@/features/cart/cart-api'
+import { connectRealtime,type KurioSocket } from './realtime'
+import { applyNftEvent,applyOrderEvent,isEventForSession,shouldApplyEvent } from './realtime-events'
+export function RealtimeSync(){
+ const {session}=useAuth(),client=useQueryClient(),token=getSessionToken()??''
+ useEffect(()=>{let active=true,socket:KurioSocket|undefined;const ids=new Set<string>(),versions=new Map<string,number>()
+ const resources=()=>{const found=new Map<string,SubscriptionTarget>();for(const q of client.getQueryCache().getAll()){const k=q.queryKey;if(k[0]==='cart'&&q.state.data&&typeof q.state.data==='object'&&'items'in q.state.data)for(const item of(q.state.data as{items:{nftId:string}[]}).items)found.set('nft:'+item.nftId,{type:'nft',id:item.nftId});if(k[0]==='nft'&&typeof k[1]==='string')found.set('nft:'+k[1],{type:'nft',id:k[1]});if(k[0]==='nfts'&&q.state.data&&typeof q.state.data==='object'&&'items'in q.state.data)for(const nft of(q.state.data as{items:{id:string}[]}).items)found.set('nft:'+nft.id,{type:'nft',id:nft.id});if(session&&k[0]==='orders'&&k[1]===session.user.id&&typeof k[2]==='string')found.set('order:'+k[2],{type:'order',id:k[2]});if(session&&k[0]==='orders'&&k[1]===session.user.id&&q.state.data&&typeof q.state.data==='object'&&'items'in q.state.data)for(const order of(q.state.data as{items:{id:string}[]}).items)found.set('order:'+order.id,{type:'order',id:order.id})}return found}
+ let hasConnected=false;let previous=new Map<string,SubscriptionTarget>();const sync=()=>{if(!active||!socket?.connected)return;const next=resources();for(const[k,t]of previous)if(!next.has(k))socket.emit('unsubscribe',t);for(const[k,t]of next)if(!previous.has(k))socket.emit('subscribe',t);previous=next}
+ const onNft=(e:NftUpdatedEvent)=>{if(!active||!shouldApplyEvent(e.eventId,e.version,ids,versions,'nft:'+e.resource.id))return;client.setQueryData(['nft',e.resource.id],(old:any)=>old?applyNftEvent(old,e):old);client.setQueriesData({queryKey:['nfts']},(old:any)=>old?{...old,items:old.items.map((n:any)=>n.id===e.resource.id?applyNftEvent(n,e):n)}:old);client.setQueryData(cartQueryKey(session?.user.id),(old:any)=>old?{...old,items:old.items.map((item:any)=>item.nftId===e.resource.id?{...item,available:e.payload.editions.find(i=>i.id===item.editionId)?.available??item.available}:item)}:old);void client.invalidateQueries({queryKey:['cart-quote',session?.user.id??'guest']})}
+ const onOrder=(e:OrderUpdatedEvent)=>{if(!active||!session||!isEventForSession(e.audienceUserId,session.user.id)||!shouldApplyEvent(e.eventId,e.version,ids,versions,'order:'+e.resource.id))return;client.setQueryData(['orders',session.user.id,e.resource.id],(old:any)=>old?applyOrderEvent(old,e):old);client.setQueriesData({queryKey:['orders',session.user.id]},(old:any)=>old&&'items'in old?{...old,items:old.items.map((o:any)=>o.id===e.resource.id?applyOrderEvent(o,e):o)}:old);void client.invalidateQueries({queryKey:['orders',session.user.id,e.resource.id]})}
+ let removeCache=()=>{};const start=async()=>{try{const connected=await connectRealtime();if(!connected)return;socket=connected;if(!active){socket.disconnect();return}socket.on('connect',()=>{const reconnect=hasConnected;hasConnected=true;previous.clear();sync();if(reconnect)for(const q of client.getQueryCache().getAll())if(['nft','nfts','cart','orders'].includes(String(q.queryKey[0])))void client.invalidateQueries({queryKey:q.queryKey,refetchType:'active'})});socket.on('nft.updated',onNft);socket.on('order.updated',onOrder);removeCache=client.getQueryCache().subscribe(sync);socket.connect();sync()}catch{/* REST remains available while offline. */}}
+ void start();return()=>{active=false;removeCache();socket?.removeAllListeners();socket?.disconnect();previous.clear()}
+ },[client,session?.user.id,token])
+ return null
+}

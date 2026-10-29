@@ -113,3 +113,4 @@ export const orderHandlers = [
   }),
 ]
 export function listMockOrders(userId:string){return Object.entries(readStore().orders).filter(([key])=>key.startsWith(userId+':')).map(([,order])=>order).sort((a,b)=>Date.parse(b.createdAt)-Date.parse(a.createdAt))}
+export function updateMockOrderStatus(userId:string,orderId:string,status:Order['status'],reason:string|null=null):Order|null{const store=readStore(),key=`${userId}:${orderId}`,order=store.orders[key];if(!order||order.status!=='pending')return order??null;const updated:Order={...order,status,version:order.version+1,updatedAt:new Date().toISOString(),transactionRef:status==='confirmed'?`demo-tx-${orderId}`:null,declineReason:status==='declined'?reason:null};store.orders[key]=updated;writeStore(store);return updated}

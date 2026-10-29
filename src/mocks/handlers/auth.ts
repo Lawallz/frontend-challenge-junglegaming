@@ -141,3 +141,5 @@ export const authHandlers = [
   }),
 ]
 export async function updateMockPassword(userId:string,currentPassword:string,newPassword:string):Promise<boolean>{const state=readMockAuthState(),account=state.accounts.find(({user})=>user.id===userId);if(!account||account.passwordHash!==await passwordHash(currentPassword))return false;account.passwordHash=await passwordHash(newPassword);writeMockAuthState(state);return true}
+
+export function resolveMockUserId(token:string|undefined):string|null{if(!token)return null;const session=readMockAuthState().sessions[token];return session&&Date.parse(session.expiresAt)>Date.now()?session.userId:null}

@@ -55,4 +55,13 @@ As imagens são SVGs determinísticos servidos pelo próprio MSW em `/nft-art/:i
 - Cen�rios reproduz�veis adicionais: `VITE_MOCK_SCENARIO=account-resilience` aplica lat�ncia �s opera��es da conta e `account-failure` retorna falha transit�ria.
 - Carteiras s�o apenas registros de demonstra��o; n�o h� conex�o real nem transa��es.
 
-\n- Perfil e carteiras foram implementados com os tokens Kurio existentes. N�o houve compara��o visual direta com os frames do Figma nesta etapa.\n
+- Perfil e carteiras foram implementados com os tokens Kurio existentes. Não houve comparação visual direta com os frames do Figma nesta etapa.
+
+## Tempo real e pagamento simulado
+
+- O transporte usa `socket.io-client` com `ws.link` do MSW e `@mswjs/socket.io-binding`; os eventos só são emitidos após `subscribe` para o recurso.
+- `realtime-price-update` altera o preço de `nft-005`; `realtime-edition-soldout` esgota as edições; `realtime-latency` atrasa a atualização de NFT.
+- `realtime-order-pending` mantém o pedido pendente e confirma após 2 s; `realtime-order-confirmed` confirma imediatamente; `realtime-order-declined` recusa; `realtime-order-duplicate` repete e envia um evento antigo; `realtime-disconnect` interrompe a primeira conexão de pedido e confirma após reconectar.
+- Para ativar: defina `VITE_MOCK_SCENARIO` antes de `npm run dev:mocks`/`npm run build:demo`, ou grave o nome em `localStorage['kurio:mock:scenario']`. Para resetar, remova a chave (ou defina `catalog-default`) e recarregue a página. `setMockScenario`/`resetMockScenario` também estão disponíveis em testes.
+- Eventos têm `eventId`, recurso, versão e audiência; atualizações privadas de pedido são filtradas por usuário. Na reconexão, recursos ativos são reconciliados por REST. A cotação REST continua autoritativa e o novo preço exige aceitação explícita antes do checkout.
+- Limitação: `@mswjs/socket.io-binding` implementa a ponte pelo WebSocket MSW, sem servidor Socket.IO real, namespaces/salas ou garantias de transporte de produção. Carteiras e pagamento permanecem simulações.

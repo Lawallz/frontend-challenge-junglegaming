@@ -73,4 +73,11 @@
 - Carteiras usam `GET/POST/DELETE /wallets` e `PATCH /wallets/:id/default`. O campo existente `role` representa a carteira padr�o (`primary`); ao remover a principal, a primeira restante � promovida.
 - Os cen�rios `account-resilience` e `account-failure` exercitam lat�ncia e falha nos endpoints de perfil. Nenhum segredo ou conex�o externa � usado.
 
-\n- Perfil e carteiras foram implementados com os tokens Kurio existentes. N�o houve compara��o visual direta com os frames do Figma nesta etapa.\n
+- Perfil e carteiras foram implementados com os tokens Kurio existentes. Não houve comparação visual direta com os frames do Figma nesta etapa.
+
+## Socket.IO e ciclo do pedido
+
+- `src/mocks/realtime.ts` liga `ws.link` ao `socket.io-client` pelo `@mswjs/socket.io-binding`; os handlers REST mantêm fixtures/carrinho/pedidos coerentes. O cliente é importado após o MSW iniciar, para o interceptor de WebSocket já estar instalado.
+- `RealtimeSync` assina NFTs presentes em consultas ativas de catálogo/detalhe/carrinho e pedidos do usuário. `eventId` e versão filtram duplicatas/ordem antiga; a audiência privada é verificada contra a sessão. O cleanup remove listeners/subscriptions e impede atualizações depois de trocar ou encerrar sessão.
+- Reconnect reconcilia recursos ativos por GET REST. A versão REST de um pedido confirmado/recusado é terminal; a cotação REST e o endpoint de criação validam novamente preço/edição. Uma alteração de preço pede confirmação explícita antes de habilitar novo envio.
+- Os cenários `realtime-*`, ativação/reset e limitações da ponte estão descritos no README. Conexão de carteira e pagamento são estados locais simulados, sem transações externas.
