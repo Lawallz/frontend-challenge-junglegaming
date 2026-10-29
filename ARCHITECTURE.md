@@ -64,7 +64,7 @@
 ## Limitações conhecidas
 
 - Os testes E2E usam Playwright em Chromium desktop e mobile; instale os browsers com `npx playwright install chromium` se ainda não estiverem disponíveis.
-- Windows: os scripts usam `cross-env`, mas a execução foi verificada apenas em Linux.
+- Windows: lint, typecheck, unitários, Playwright com um worker, build demo e auditoria foram verificados nesta rodada. O Lighthouse instalado exige Node >= 22.19; a medição usou Node 24.15.0. No PowerShell, `npm.cmd run test:e2e -- --workers=1` repassa o argumento sem o problema observado no wrapper `npm.ps1` deste ambiente.
 
 ## Perfil, pedidos e carteiras
 
@@ -91,6 +91,9 @@
 - Bootstrap: `main.tsx` instala MSW e carrega `render.tsx` em paralelo; o registro do service worker também começa cedo. A renderização só inicia com os interceptores prontos, inclusive para Socket.IO. O detalhe usa prefetch REST deduplicado pelo mesmo `nftDetailQuery` consumido pela página.
 - MSW: despacho por grupo carrega os handlers originais sob demanda, mantendo estado compartilhado, autenticação, idempotência e persistência. Arquivos reais em `/assets`, `/fonts` e PNG/WebP em `/nft-art` passam diretamente ao servidor local; SVGs gerados, APIs e Socket.IO continuam interceptados. Logs detalhados ficam ligados em desenvolvimento e desativados no build otimizado. A implementação Socket.IO carrega o atualizador de pedidos ao assinar um pedido e descarta assinaturas removidas durante o import.
 - Assets: originais PNG preservados com variantes WebP responsivas; `NftArtwork` conserva URLs não reconhecidas da API. Roboto Mono mantém pesos/subsets e licença OFL, agora locais. Não houve nova comparação Figma; snapshots existentes validam a preservação de layout e rasterização sem afrouxar tolerâncias.
+
+- Favoritos: `FavoriteButton` preserva os estados de sessão/carregamento e o link de login com retorno seguro. O componente interno autenticado monta os hooks de query/mutation somente quando existe sessão, evitando observadores desabilitados em cada card para visitantes. Cache por usuário, mutations, invalidação e tratamento de sessão expirada continuam iguais.
+- Dimensionamento de imagens: o `sizes` do catálogo mobile representa duas colunas com 48 px de padding e 11 px de gap; o hero secundário declara seus 77/146 px e as miniaturas do detalhe seus 70 px reais. As promoções fora da área visível usam lazy loading nativo. Os PNGs/WebPs e sua qualidade não foram modificados.
 
 ## Acessibilidade e telas
 

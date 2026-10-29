@@ -1,0 +1,28 @@
+{
+  "capturedAt": "2026-10-29T18:14:05.582Z",
+  "os": "Windows_NT 10.0.19045 (x64)",
+  "cpu": "AMD Ryzen 5 5600G with Radeon Graphics         ",
+  "logicalCpus": 12,
+  "totalMemoryGiB": 31.39,
+  "node": "v24.15.0",
+  "npm": "10.9.2",
+  "lighthouse": "13.6.0",
+  "playwright": "1.64.1",
+  "chromium": "156.0.8078.4",
+  "build": "Vite production build via npm run build:demo",
+  "scenario": "catalog-default",
+  "origin": "http://127.0.0.1:4174",
+  "conditions": {
+    "repetition": "3 sequential cold navigations per route/profile; separate Lighthouse Chrome process per run",
+    "desktop": "Lighthouse desktop preset, simulated throttling",
+    "mobile": "Lighthouse default mobile preset (Moto G Power emulation), simulated slow 4G and CPU throttling",
+    "network": "loopback preview, MSW catalog-default fixtures, responsive local artwork and self-hosted Roboto Mono; no external network dependency",
+    "categories": [
+      "performance",
+      "accessibility",
+      "best-practices",
+      "seo"
+    ],
+    "locale": "pt-BR"
+  }
+}
