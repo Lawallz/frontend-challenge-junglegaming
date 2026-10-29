@@ -1,0 +1,16 @@
+{
+  "baseUrl": "http://127.0.0.1:4174",
+  "previewPort": 4174,
+  "scenario": "catalog-default",
+  "runsPerCombination": 3,
+  "locale": "pt-BR",
+  "categories": ["performance", "accessibility", "best-practices", "seo"],
+  "pages": [
+    { "id": "home", "path": "/" },
+    { "id": "nft-detail", "path": "/nft/nft-005" }
+  ],
+  "profiles": ["desktop", "mobile"],
+  "outputDirectory": "reports/lighthouse",
+  "baselineDirectory": "reports/lighthouse/2026-10-29",
+  "targets": { "performance": 90, "accessibility": 95, "best-practices": 95, "seo": 90 }
+}

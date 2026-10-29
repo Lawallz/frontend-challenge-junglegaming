@@ -82,6 +82,16 @@
 - Reconnect reconcilia recursos ativos por GET REST. A versão REST de um pedido confirmado/recusado é terminal; a cotação REST e o endpoint de criação validam novamente preço/edição. Uma alteração de preço pede confirmação explícita antes de habilitar novo envio.
 - Os cenários `realtime-*`, ativação/reset e limitações da ponte estão descritos no README. Conexão de carteira e pagamento são estados locais simulados, sem transações externas.
 
+## Auditoria Lighthouse
+
+- `npm run audit:lighthouse` cria o build otimizado com MSW (`catalog-default`), serve-o em loopback e mede `/` e `/nft/nft-005` nos presets desktop e mobile, com três navegações frias sequenciais por combinação.
+- A configuração reproduzível está em `scripts/lighthouse-audit.config.json`; o runner em `scripts/lighthouse-audit.mjs` reutiliza Lighthouse e Chromium já instalados e não adiciona dependências.
+- `reports/lighthouse/<timestamp-UTC>/` guarda 12 pares HTML/JSON, configuração, ambiente, resumo e comparação com a baseline intacta de `2026-10-29/`. Scores são escalados para 0–100; LCP/TBT ficam em milissegundos e CLS sem unidade. O resumo mantém as três amostras e medianas, sem aceitar métricas ausentes ou séries incompletas.
+- Metas do desafio: Performance ≥ 90, Accessibility ≥ 95, Best Practices ≥ 95 e SEO ≥ 90 em cada combinação. `comparison.md` mostra resultados e metas não atingidas. Os presets, throttling simulado e cenário padrão foram preservados; CPU/carga do host ainda afetam os valores.
+- Bootstrap: `main.tsx` instala MSW e carrega `render.tsx` em paralelo; o registro do service worker também começa cedo. A renderização só inicia com os interceptores prontos, inclusive para Socket.IO. O detalhe usa prefetch REST deduplicado pelo mesmo `nftDetailQuery` consumido pela página.
+- MSW: despacho por grupo carrega os handlers originais sob demanda, mantendo estado compartilhado, autenticação, idempotência e persistência. Arquivos reais em `/assets`, `/fonts` e PNG/WebP em `/nft-art` passam diretamente ao servidor local; SVGs gerados, APIs e Socket.IO continuam interceptados. Logs detalhados ficam ligados em desenvolvimento e desativados no build otimizado. A implementação Socket.IO carrega o atualizador de pedidos ao assinar um pedido e descarta assinaturas removidas durante o import.
+- Assets: originais PNG preservados com variantes WebP responsivas; `NftArtwork` conserva URLs não reconhecidas da API. Roboto Mono mantém pesos/subsets e licença OFL, agora locais. Não houve nova comparação Figma; snapshots existentes validam a preservação de layout e rasterização sem afrouxar tolerâncias.
+
 ## Acessibilidade e telas
 
 - `src/test/visual.spec.ts` registra snapshots de inicio, detalhe, carrinho e checkout nos viewports 390, 768 e 1440 px e verifica ausencia de overflow horizontal nas rotas principais, incluindo conta e confirmacao.

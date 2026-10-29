@@ -13,4 +13,11 @@ describe('catalog fixture queries', () => {
     expect(filterSortNfts(nftFixtures, { sort: 'price_asc' }).slice(0, 2).map((nft) => nft.id)).toEqual(['nft-001', 'nft-014'])
     expect(filterSortNfts(nftFixtures, { q: 'not present' })).toEqual([])
   })
+
+  it('sorts canonical timestamps descending with stable ID tie breaking', () => {
+    const first = nftFixtures[0]!
+    const second = { ...nftFixtures[1]!, createdAt: first.createdAt }
+    expect(filterSortNfts([second, nftFixtures[2]!, first], { sort: 'recent' }).map(nft => nft.id))
+      .toEqual([first.id, second.id, nftFixtures[2]!.id])
+  })
 })

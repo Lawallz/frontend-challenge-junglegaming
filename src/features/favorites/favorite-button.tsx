@@ -41,8 +41,8 @@ export function FavoriteButton({ nftId, returnTo, className = '', size = 17, sho
 
   if (isLoading) return <button className={className} type="button" disabled aria-label="Verificando sessão"><Heart size={size} /></button>
   if (!session) {
-    return <Link className={className} to="/login" search={{ returnTo: safeTarget, reason: undefined }} aria-label="Entre para adicionar aos favoritos"><Heart size={size} />{showLabel && <span>Favoritar</span>}</Link>
+    return <Link className={className} to="/login" search={{ returnTo: safeTarget, reason: undefined }} aria-label={showLabel ? "Favoritar: entre para adicionar aos favoritos" : "Entre para adicionar aos favoritos"}><Heart size={size} />{showLabel && <span>Favoritar</span>}</Link>
   }
 
-  return <button className={`${className} ${isFavorite ? 'is-favorite' : ''}`} type="button" aria-label={label} aria-pressed={isFavorite} disabled={favoritesQuery.isPending || mutation.isPending} onClick={() => mutation.mutate()}><Heart size={size} fill={isFavorite ? 'currentColor' : 'none'} />{showLabel && <span>{isFavorite ? 'Salvo' : 'Favoritar'}</span>}</button>
+  return <button className={`${className} ${isFavorite ? 'is-favorite' : ''}`} type="button" aria-label={showLabel ? `${isFavorite ? 'Salvo' : 'Favoritar'}: ${label}` : label} aria-pressed={isFavorite} disabled={favoritesQuery.isPending || mutation.isPending} onClick={() => mutation.mutate()}><Heart size={size} fill={isFavorite ? 'currentColor' : 'none'} />{showLabel && <span>{isFavorite ? 'Salvo' : 'Favoritar'}</span>}</button>
 }
