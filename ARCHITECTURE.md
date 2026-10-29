@@ -81,3 +81,9 @@
 - `RealtimeSync` assina NFTs presentes em consultas ativas de catálogo/detalhe/carrinho e pedidos do usuário. `eventId` e versão filtram duplicatas/ordem antiga; a audiência privada é verificada contra a sessão. O cleanup remove listeners/subscriptions e impede atualizações depois de trocar ou encerrar sessão.
 - Reconnect reconcilia recursos ativos por GET REST. A versão REST de um pedido confirmado/recusado é terminal; a cotação REST e o endpoint de criação validam novamente preço/edição. Uma alteração de preço pede confirmação explícita antes de habilitar novo envio.
 - Os cenários `realtime-*`, ativação/reset e limitações da ponte estão descritos no README. Conexão de carteira e pagamento são estados locais simulados, sem transações externas.
+
+## Acessibilidade e telas
+
+- `src/test/visual.spec.ts` registra snapshots de inicio, detalhe, carrinho e checkout nos viewports 390, 768 e 1440 px e verifica ausencia de overflow horizontal nas rotas principais, incluindo conta e confirmacao.
+- `src/test/visual.spec.ts-snapshots/` e o baseline visual versionado. Atualizar somente com `npm run test:e2e -- src/test/visual.spec.ts --update-snapshots` apos revisar mudancas intencionais.
+- Estilos globais exibem foco de teclado e respeitam `prefers-reduced-motion`; o drawer de filtros mobile implementa foco inicial, contencao por Tab, Escape e retorno ao acionador. Os snapshots toleram diferenca de ate 1.5% dos pixels para variacao de rasterizacao. Isso nao equivale a auditoria WCAG completa.

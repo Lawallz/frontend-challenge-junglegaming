@@ -47,8 +47,16 @@
   button, a, select { -webkit-tap-highlight-color: transparent; }
   button { color: inherit; }
   a { color: inherit; text-decoration: none; }
+  :focus-visible { outline: 3px solid #ffd08a; outline-offset: 3px; }
+  input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 3px solid #ffd08a; outline-offset: 2px; }
+  button, a, select, input { scroll-margin-block: 1rem; }
+  img { max-width: 100%; }
   ::selection { background: var(--primary); color: var(--ink); }
 }
+
+html, body, #root { max-width: 100%; overflow-x: clip; }
+button, [role="button"], .mobile-tabbar a, .mobile-tabbar button { min-height: 44px; }
+.mobile-tabbar a, .mobile-tabbar button { min-width: 44px; }
 
 .kurio-shell { min-height: 100vh; background: var(--ink); padding: 0 32px; }
 .kurio-page { max-width: 1200px; margin: 0 auto; }
@@ -221,8 +229,8 @@
   .catalog-tabs::-webkit-scrollbar { display: none; }
   .catalog-tabs button { font-size: 9px; padding-bottom: 12px; }
   .catalog-layout { display: block; padding-top: 17px; }
-  .filter-panel { position: fixed; z-index: 30; top: 0; right: 0; bottom: 0; width: min(330px, 88vw); overflow: auto; padding: 21px 22px 30px; background: #1d120e; transform: translateX(105%); transition: transform .22s ease; box-shadow: -15px 0 40px #0008; }
-  .filter-panel.open { transform: translateX(0); }
+  .filter-panel { position: fixed; z-index: 30; top: 0; right: 0; bottom: 0; width: min(330px, 88vw); overflow: auto; padding: 21px 22px 30px; background: #1d120e; transform: translateX(105%); transition: transform .22s ease; box-shadow: -15px 0 40px #0008; visibility: hidden; }
+  .filter-panel.open { transform: translateX(0); visibility: visible; }
   .mobile-filter-heading { display: flex; align-items: center; justify-content: space-between; margin-bottom: 25px; font-size: 14px; }
   .mobile-filter-heading button { min-width: 30px; width: 30px; }
   .filter-scrim { display: block; position: fixed; z-index: 29; inset: 0; width: 100%; height: 100%; border: 0; background: #090605b8; }
@@ -774,3 +782,8 @@
 @media(max-width:900px){.account-mobile-logout{display:inline-flex;align-items:center;border:1px solid var(--line-soft);padding:7px 9px;background:transparent;color:#c5a37e;font-size:8px}.account-shell .checkout-mobile-header>span{margin-left:auto;margin-right:9px}}
 
 .wallet-simulation{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:14px;padding-top:12px;border-top:1px solid #342117}.wallet-simulation p,.wallet-simulation small{width:100%;margin:0;color:#b19373;font-size:9px}.wallet-simulation button{border:1px solid #684124;padding:7px 9px;background:transparent;color:#e5b47f;font-size:8px;cursor:pointer}
+
+
+/* Minimum pointer targets for icon-only and compact controls. */
+.favorite-button, .favorite-remove, .gallery-prev, .gallery-next, .cart-remove, .cart-quantity button, .quantity-stepper button, .pagination button, .filter-trigger, .mobile-filter-heading button { min-width: 44px; min-height: 44px; }
+.filter-check, .catalog-tabs button { min-height: 44px; }

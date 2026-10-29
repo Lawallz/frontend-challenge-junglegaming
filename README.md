@@ -65,3 +65,9 @@ As imagens são SVGs determinísticos servidos pelo próprio MSW em `/nft-art/:i
 - Para ativar: defina `VITE_MOCK_SCENARIO` antes de `npm run dev:mocks`/`npm run build:demo`, ou grave o nome em `localStorage['kurio:mock:scenario']`. Para resetar, remova a chave (ou defina `catalog-default`) e recarregue a página. `setMockScenario`/`resetMockScenario` também estão disponíveis em testes.
 - Eventos têm `eventId`, recurso, versão e audiência; atualizações privadas de pedido são filtradas por usuário. Na reconexão, recursos ativos são reconciliados por REST. A cotação REST continua autoritativa e o novo preço exige aceitação explícita antes do checkout.
 - Limitação: `@mswjs/socket.io-binding` implementa a ponte pelo WebSocket MSW, sem servidor Socket.IO real, namespaces/salas ou garantias de transporte de produção. Carteiras e pagamento permanecem simulações.
+
+## Acessibilidade e regressao visual
+
+- `npm run test:e2e -- src/test/visual.spec.ts` executa a matriz Chromium nos viewports 390, 768 e 1440 px, valida reflow nas rotas principais e captura inicio, detalhe, carrinho e checkout.
+- Baselines ficam em `src/test/visual.spec.ts-snapshots/`. Para revisar uma mudanca intencional, execute `npm run test:e2e -- src/test/visual.spec.ts --update-snapshots` e confira todas as imagens geradas no diff.
+- Os testes usam MSW e contexts isolados do Playwright; as capturas desativam animacoes e permitem diferenca de ate 1.5% dos pixels para variacao de rasterizacao de fontes. A validacao automatizada de foco cobre o drawer mobile. Nao declara conformidade WCAG completa; testes manuais com leitor de tela ainda sao necessarios.

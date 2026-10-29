@@ -107,7 +107,7 @@ export function NftDetailPage() {
 }
 
 function DetailSkeleton() {
-  return <div className="detail-skeleton" aria-label="Carregando detalhes do NFT"><div className="detail-skeleton-art" /><div className="detail-skeleton-copy"><span /><span /><span /><span /><div /></div></div>
+  return <div className="detail-skeleton" role="status" aria-live="polite" aria-label="Carregando detalhes do NFT"><div className="detail-skeleton-art" /><div className="detail-skeleton-copy"><span /><span /><span /><span /><div /></div></div>
 }
 
 function DetailRelatedSkeleton() {

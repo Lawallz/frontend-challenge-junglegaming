@@ -158,9 +158,9 @@ export function CartPage() {
 }
 
 function CartSkeleton() {
-  return <div className="cart-skeleton" aria-label="Carregando carrinho"><div className="cart-skeleton-lines">{Array.from({ length: 3 }, (_, index) => <div className="cart-skeleton-item" key={index}><span /><div><i /><i /></div><b /></div>)}</div><div className="cart-skeleton-summary"><i /><i /><i /><b /></div></div>
+  return <div className="cart-skeleton" role="status" aria-live="polite" aria-label="Carregando carrinho"><div className="cart-skeleton-lines">{Array.from({ length: 3 }, (_, index) => <div className="cart-skeleton-item" key={index}><span /><div><i /><i /></div><b /></div>)}</div><div className="cart-skeleton-summary"><i /><i /><i /><b /></div></div>
 }
 
 function QuoteSkeleton() {
-  return <div className="quote-skeleton" aria-label="Calculando cotação"><i /><i /><i /></div>
+  return <div className="quote-skeleton" role="status" aria-live="polite" aria-label="Calculando cotação"><i /><i /><i /></div>
 }

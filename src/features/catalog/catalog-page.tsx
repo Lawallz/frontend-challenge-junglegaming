@@ -3,7 +3,7 @@ import type { FormEvent, ReactNode } from 'react'
 import { Link, useLocation, useNavigate } from '@tanstack/react-router'
 import axios from 'axios'
 import { ArrowRight, ChevronDown, ChevronLeft, ChevronRight, Heart, Home, Menu, Search, ShoppingCart, SlidersHorizontal, UserRound, X } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { API_ROUTES, parseNftListQuery, serializeNftListQuery, type NftListQuery, type NftListResponse, type NftNetwork, type NftTab } from '@/shared/api/contracts'
 import { ApiError } from '@/shared/api/errors'
 import { http } from '@/shared/api/http'
@@ -52,10 +52,31 @@ export function CatalogPage() {
   const query = useMemo(() => parseNftListQuery(new URLSearchParams(searchStr)), [searchStr])
   const [searchText, setSearchText] = useState(query.q ?? '')
   const [filtersOpen, setFiltersOpen] = useState(false)
+  const filterTriggerRef = useRef<HTMLButtonElement>(null)
+  const filterPanelRef = useRef<HTMLElement>(null)
   const [minText, setMinText] = useState(query.minPrice ?? '0.02')
   const [maxText, setMaxText] = useState(query.maxPrice ?? '12.30')
 
   useEffect(() => setSearchText(query.q ?? ''), [query.q])
+
+  useEffect(() => {
+    if (!filtersOpen) return
+    const panel = filterPanelRef.current
+    const focusable = () => panel?.querySelectorAll<HTMLElement>('a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])') ?? []
+    focusable()[0]?.focus()
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') { setFiltersOpen(false); filterTriggerRef.current?.focus(); return }
+      if (event.key !== 'Tab') return
+      const elements = [...focusable()]
+      if (!elements.length) return
+      const first = elements[0]!
+      const last = elements[elements.length - 1]!
+      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus() }
+      else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus() }
+    }
+    document.addEventListener('keydown', onKeyDown)
+    return () => document.removeEventListener('keydown', onKeyDown)
+  }, [filtersOpen])
 
   const { data, isPending, error, refetch } = useQuery({
     queryKey: ['nfts', query],
@@ -98,7 +119,7 @@ export function CatalogPage() {
 
         <div className="mobile-search-row">
           <form className="mobile-search" onSubmit={submitSearch}><Search /><input aria-label="Buscar coleções" placeholder="Explorar coleções" value={searchText} onChange={(event) => setSearchText(event.target.value)} /></form>
-          <button className={`filter-trigger ${activeFilters ? 'has-filter' : ''}`} aria-label="Abrir filtros" onClick={() => setFiltersOpen(true)}><SlidersHorizontal /></button>
+          <button ref={filterTriggerRef} className={`filter-trigger ${activeFilters ? 'has-filter' : ''}`} aria-label="Abrir filtros" aria-expanded={filtersOpen} aria-controls="catalog-filter-panel" onClick={() => setFiltersOpen(true)}><SlidersHorizontal /></button>
         </div>
 
         <section className="hero" aria-label="Bem-vindo à Kurio">
@@ -116,8 +137,8 @@ export function CatalogPage() {
             {tabs.map((tab) => <button key={tab.value} role="tab" aria-selected={selectedTab === tab.value} className={selectedTab === tab.value ? 'selected' : ''} onClick={() => updateQuery({ tab: tab.value === 'all' ? undefined : tab.value })}>{tab.label}</button>)}
           </div>
           <div className="catalog-layout">
-            <aside className={`filter-panel ${filtersOpen ? 'open' : ''}`} aria-label="Filtros do catálogo">
-              <div className="mobile-filter-heading"><strong>Filtros</strong><button onClick={() => setFiltersOpen(false)} aria-label="Fechar filtros"><X /></button></div>
+            <aside ref={filterPanelRef} id="catalog-filter-panel" className={`filter-panel ${filtersOpen ? 'open' : ''}`} aria-label="Filtros do catálogo" role={filtersOpen ? 'dialog' : undefined} aria-modal={filtersOpen || undefined}>
+              <div className="mobile-filter-heading"><strong>Filtros</strong><button onClick={() => { setFiltersOpen(false); filterTriggerRef.current?.focus() }} aria-label="Fechar filtros"><X /></button></div>
               <FilterGroup title="Coleções">{categories.map((category, index) => <FilterCheck key={category} label={category} count={[33,12,65,39,23,17,19,13,18][index] ?? 0} checked={query.collections?.includes(category) ?? false} onChange={() => updateQuery({ collections: toggleValue(query.collections, category) })} />)}</FilterGroup>
               <FilterGroup title="Faixa de preço">
                 <div className="price-range"><input aria-label="Preço mínimo em ETH" inputMode="decimal" value={minText} onChange={(event) => setMinText(event.target.value)} /><span>—</span><input aria-label="Preço máximo em ETH" inputMode="decimal" value={maxText} onChange={(event) => setMaxText(event.target.value)} /></div>
@@ -126,10 +147,10 @@ export function CatalogPage() {
               <FilterGroup title="Rede">{networks.map((network, index) => <FilterCheck key={network.value} label={network.label} count={[119,78,86][index] ?? 0} checked={query.networks?.includes(network.value) ?? false} onChange={() => updateQuery({ networks: toggleValue(query.networks, network.value) })} />)}</FilterGroup>
               <button className="clear-filters" onClick={() => { setMinText('0.02'); setMaxText('12.30'); updateQuery({ collections: undefined, networks: undefined, minPrice: undefined, maxPrice: undefined, q: query.q, sort: query.sort, tab: query.tab }) }}>Limpar filtros</button>
             </aside>
-            {filtersOpen && <button className="filter-scrim" aria-label="Fechar filtros" onClick={() => setFiltersOpen(false)} />}
+            {filtersOpen && <button className="filter-scrim" aria-label="Fechar filtros" onClick={() => { setFiltersOpen(false); filterTriggerRef.current?.focus() }} />}
             <div className="catalog-results">
               <div className="results-heading"><span>{data ? `${data.total} NFTs encontrados` : 'Descubra peças únicas'}</span><span>Ordenar por <strong>{sortLabel(query.sort)}</strong></span></div>
-              {isPending ? <div className="nft-grid" aria-label="Carregando NFTs">{Array.from({ length: 6 }, (_, i) => <NftSkeleton key={i} />)}</div>
+              {isPending ? <div className="nft-grid" role="status" aria-live="polite" aria-label="Carregando NFTs">{Array.from({ length: 6 }, (_, i) => <NftSkeleton key={i} />)}</div>
                 : error ? <div className="catalog-state error-state"><div><h2>Não foi possível carregar o catálogo</h2><p>{error instanceof ApiError ? error.message : axios.isAxiosError(error) ? 'Verifique sua conexão e tente novamente.' : 'Ocorreu um erro inesperado.'}</p><button className="apply-button" onClick={() => void refetch()}>Tentar novamente</button></div></div>
                 : content.length === 0 ? <div className="catalog-state"><div><h2>Nenhum NFT encontrado</h2><p>Tente ajustar a busca ou remover alguns filtros.</p><button className="apply-button" onClick={() => { setSearchText(''); updateQuery({ q: undefined, collections: undefined, networks: undefined, minPrice: undefined, maxPrice: undefined }) }}>Limpar busca e filtros</button></div></div>
                 : <div className="nft-grid">{content.map((nft, index) => <article className="nft-card" key={nft.id}><div className="nft-image-wrap"><Link to="/nft/$nftId" params={{ nftId: nft.id }} className="nft-image-link"><img className="nft-image" src={nft.images[0]?.url} alt={nft.images[0]?.alt ?? nft.name} loading={index > 5 ? 'lazy' : 'eager'} /></Link>{index === 2 && <span className="rarity-tag">RARO</span>}<FavoriteButton nftId={nft.id} className="favorite-button" /></div><div className="nft-info"><h3>{nft.name} <span>{nft.tokenId}</span></h3><p>{formatEth(nft.price)}</p><span className="collection-name">{nft.collection.name}</span></div></article>)}</div>}

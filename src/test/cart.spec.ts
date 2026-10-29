@@ -19,7 +19,9 @@ test('adiciona, altera, persiste e remove itens respeitando o estoque', async ({
   await addOpenEdition(page)
   await page.goto('/cart')
   await expect(page.getByRole('link', { name: 'Tiny Voyager #0005' })).toBeVisible()
+  const quantityUpdate = page.waitForResponse((response) => response.url().includes('/cart/items/') && response.request().method() === 'PUT')
   await page.getByRole('button', { name: 'Aumentar Tiny Voyager' }).click()
+  expect((await quantityUpdate).status()).toBe(200)
   await expect(page.getByLabel('Quantidade', { exact: true })).toHaveText('2')
   await expect(page.locator('.cart-items-column .cart-line-total')).toBeVisible()
 

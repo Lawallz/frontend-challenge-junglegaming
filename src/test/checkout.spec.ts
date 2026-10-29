@@ -84,10 +84,11 @@ test('duplo clique durante resposta lenta cria apenas um pedido', async ({ page 
 })
 
 test('atualização nft.updated durante checkout invalida cotação e exige revisão', async ({ page }) => {
-  await page.goto('/')
-  await page.evaluate(() => localStorage.setItem('kurio:mock:scenario', 'realtime-price-update'))
   await addOpenEdition(page)
   await loginDemo(page)
+  await expect(page.getByRole('heading', { name: 'Finalizar pedido' })).toBeVisible()
+  await page.evaluate(() => localStorage.setItem('kurio:mock:scenario', 'realtime-price-update'))
+  await page.reload()
   await expect(page.getByRole('heading', { name: 'Finalizar pedido' })).toBeVisible()
   await expect(page.getByRole('alert')).toContainText('atualizado', { timeout: 10_000 })
   await expect(page.getByRole('button', { name: 'Aceitar novos preços e recalcular' })).toBeVisible()
