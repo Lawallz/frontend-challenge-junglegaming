@@ -112,3 +112,4 @@ export const orderHandlers = [
     return order ? HttpResponse.json(order) : error(404, 'NOT_FOUND', 'NÃ£o encontramos este pedido.')
   }),
 ]
+export function listMockOrders(userId:string){return Object.entries(readStore().orders).filter(([key])=>key.startsWith(userId+':')).map(([,order])=>order).sort((a,b)=>Date.parse(b.createdAt)-Date.parse(a.createdAt))}

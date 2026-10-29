@@ -55,3 +55,5 @@ export const walletHandlers = [
     return HttpResponse.json(wallet, { status: 201 })
   }),
 ]
+export function setMockDefaultWallet(userId:string,id:string):Wallet|null{const store=readWallets(),list=store[userId]??[];if(!list.some(w=>w.id===id))return null;const updated=list.map(w=>({...w,role:w.id===id?'primary' as const:'secondary' as const}));store[userId]=updated;writeWallets(store);return updated.find(w=>w.id===id)??null}
+export function removeMockWallet(userId:string,id:string):boolean{const store=readWallets(),list=store[userId]??[],target=list.find(w=>w.id===id);if(!target)return false;let next=list.filter(w=>w.id!==id);if(target.role==='primary'&&next.length)next=next.map((w,i)=>({...w,role:i===0?'primary' as const:'secondary' as const}));store[userId]=next;writeWallets(store);return true}

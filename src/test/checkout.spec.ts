@@ -20,11 +20,13 @@ async function prepareCheckout(page: import('@playwright/test').Page, quantity =
   await addOpenEdition(page, quantity)
   await loginDemo(page)
   await expect(page.getByRole('heading', { name: 'Finalizar pedido' })).toBeVisible()
-  const addWallet = page.locator('.checkout-secondary-button')
+  await page.goto('/wallets')
+  await page.getByLabel('Nome', { exact: true }).fill('Carteira de teste')
+  await page.getByLabel('Endereço').fill('0x' + 'a'.repeat(40))
   const response = page.waitForResponse((entry) => entry.url().includes('/wallets') && entry.request().method() === 'POST')
-  await addWallet.click()
-  const result = await response
-  expect(result.status()).toBe(201)
+  await page.getByRole('button', { name: 'Adicionar carteira' }).click()
+  expect((await response).status()).toBe(201)
+  await page.goto('/checkout')
   await expect(page.getByLabel('Carteira')).toBeVisible()
   await expect(page.getByRole('button', { name: 'Confirmar pedido' })).toBeEnabled()
 }

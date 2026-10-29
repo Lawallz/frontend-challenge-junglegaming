@@ -140,3 +140,4 @@ export const authHandlers = [
     return new HttpResponse(null, { status: 204 })
   }),
 ]
+export async function updateMockPassword(userId:string,currentPassword:string,newPassword:string):Promise<boolean>{const state=readMockAuthState(),account=state.accounts.find(({user})=>user.id===userId);if(!account||account.passwordHash!==await passwordHash(currentPassword))return false;account.passwordHash=await passwordHash(newPassword);writeMockAuthState(state);return true}

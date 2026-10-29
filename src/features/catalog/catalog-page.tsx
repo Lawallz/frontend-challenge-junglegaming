@@ -93,7 +93,7 @@ export function CatalogPage() {
           <nav className="desktop-nav" aria-label="Navegação principal">
             <a className="active" href="/">Início</a><a href="#catalog">Mercado</a><a href="#creators">Criadores</a><a href="#learn">Aprenda</a>
           </nav>
-          <div className="header-actions"><button aria-label="Buscar" onClick={() => document.querySelector<HTMLInputElement>('.desktop-search input')?.focus()}><Search /></button><Link className="cart-nav-link" to="/cart" aria-label={`Carrinho, ${cartCount} itens`}><ShoppingCart /><i>{cartCount}</i></Link>{session ? <><a className="signin" href="/favorites">{session.user.displayName}</a><button className="signin" onClick={() => void logout()}>Sair</button></> : <a className="signin" href="/login">Entrar</a>}</div>
+          <div className="header-actions"><button aria-label="Buscar" onClick={() => document.querySelector<HTMLInputElement>('.desktop-search input')?.focus()}><Search /></button><Link className="cart-nav-link" to="/cart" aria-label={`Carrinho, ${cartCount} itens`}><ShoppingCart /><i>{cartCount}</i></Link>{session ? <><a className="signin" href="/profile">{session.user.displayName}</a><button className="signin" onClick={() => void logout()}>Sair</button></> : <a className="signin" href="/login">Entrar</a>}</div>
         </header>
 
         <div className="mobile-search-row">
@@ -155,7 +155,7 @@ export function CatalogPage() {
           <p className="copyright">© 2026 Kurio. Propriedade digital para todos.</p>
         </footer>
       </div>
-      <nav className="mobile-tabbar" aria-label="Navegação mobile"><Link className="tabbar-active" to="/" aria-label="Início"><Home /></Link><a href={session ? '/favorites' : '/login?returnTo=%2Ffavorites'} aria-label="Favoritos"><Heart /></a><span className="tabbar-center"><Menu /></span><Link to="/cart" aria-label={`Carrinho, ${cartCount} itens`}><ShoppingCart /></Link><a href={session ? '/favorites' : '/login?returnTo=%2Ffavorites'} aria-label="Perfil"><UserRound /></a></nav>
+      <nav className="mobile-tabbar" aria-label="Navegação mobile"><Link className="tabbar-active" to="/" aria-label="Início"><Home /></Link><a href={session ? '/favorites' : '/login?returnTo=%2Ffavorites'} aria-label="Favoritos"><Heart /></a><span className="tabbar-center"><Menu /></span><Link to="/cart" aria-label={`Carrinho, ${cartCount} itens`}><ShoppingCart /></Link><a href={session ? '/profile' : '/login?returnTo=%2Fprofile'} aria-label="Perfil"><UserRound /></a></nav>
     </main>
   )
 }

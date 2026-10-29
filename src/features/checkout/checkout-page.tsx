@@ -7,7 +7,7 @@ import { ApiError } from '@/shared/api/errors'
 import { useAuth } from '@/features/auth/auth-context'
 import { cartQueryKey, getCart, getQuote } from '@/features/cart/cart-api'
 import { formatEth } from '@/shared/lib/eth'
-import { addDemoWallet, createOrder, getWallets } from './checkout-api'
+import { createOrder, getWallets } from './checkout-api'
 
 const networkOptions: { label: string; value: EthNetwork }[] = [
   { label: 'Ethereum', value: 'ethereum-mainnet' }, { label: 'Polygon', value: 'polygon' },
@@ -29,17 +29,9 @@ export function CheckoutPage() {
     queryFn: () => getQuote({ network, couponCode: cartQuery.data?.couponCode }),
     enabled: Boolean(cartQuery.data?.items.length), retry: false,
   })
-  const wallet = walletsQuery.data?.find((item) => item.id === selectedWalletId) ?? walletsQuery.data?.[0]
+  const wallet = walletsQuery.data?.find((item) => item.id === selectedWalletId) ?? walletsQuery.data?.find((item) => item.role === 'primary') ?? walletsQuery.data?.[0]
   const [submissionError, setSubmissionError] = useState<string | null>(null)
   const [lastAttempt, setLastAttempt] = useState<{ fingerprint: string; key: string } | null>(null)
-
-  const walletMutation = useMutation({
-    mutationFn: addDemoWallet,
-    onSuccess: async (created) => {
-      setSelectedWalletId(created.id)
-      await queryClient.invalidateQueries({ queryKey: ['wallets', userId] })
-    },
-  })
 
   const orderMutation = useMutation({
     mutationFn: ({ input, key }: { input: CreateOrderRequest; key: string }) => createOrder(input, key),
@@ -59,7 +51,7 @@ export function CheckoutPage() {
   })
 
   useEffect(() => {
-    if (walletsQuery.data?.length && !selectedWalletId) setSelectedWalletId(walletsQuery.data[0]!.id)
+    if (walletsQuery.data?.length && !selectedWalletId) setSelectedWalletId((walletsQuery.data.find((item) => item.role === 'primary') ?? walletsQuery.data[0])!.id)
   }, [selectedWalletId, walletsQuery.data])
 
   const checkoutInput = useMemo(() => {
@@ -82,17 +74,6 @@ export function CheckoutPage() {
     orderMutation.mutate({ input: checkoutInput, key })
   }
 
-  async function addWallet() {
-    const input = {
-      role: walletsQuery.data?.length ? 'secondary' as const : 'primary' as const,
-      label: 'Carteira Kurio de demonstraÃ§Ã£o',
-      address: `0x${'0'.repeat(39)}1`,
-      network,
-      walletType: 'metamask' as const,
-    }
-    walletMutation.reset()
-    walletMutation.mutate(input)
-  }
 
   const quote = quoteQuery.data
   const unavailable = quote?.issues.some((issue) => issue.type === 'UNAVAILABLE') ?? false
@@ -116,8 +97,7 @@ export function CheckoutPage() {
               <section className="checkout-card"><div className="checkout-section-heading"><span>02</span><div><h2>Carteira de recebimento</h2><p>O pedido ficarÃ¡ pendente; nenhuma transaÃ§Ã£o serÃ¡ enviada.</p></div></div>
                 {walletsQuery.data?.length ? <label className="checkout-field">Carteira<select value={wallet?.id ?? ''} onChange={(event) => setSelectedWalletId(event.target.value)}>{walletsQuery.data.map((item: Wallet) => <option value={item.id} key={item.id}>{item.label} Â· {item.address.slice(0, 6)}â€¦{item.address.slice(-4)} Â· {item.network}</option>)}</select></label>
                   : <div className="checkout-wallet-empty"><WalletIcon /><div><strong>Nenhuma carteira cadastrada</strong><p>Adicione uma carteira fictÃ­cia para associÃ¡-la ao pedido.</p></div></div>}
-                <button className="checkout-secondary-button" onClick={() => void addWallet()} disabled={walletMutation.isPending}><WalletIcon />{walletMutation.isPending ? 'Adicionandoâ€¦' : walletsQuery.data?.length ? 'Adicionar carteira de demonstraÃ§Ã£o' : 'Adicionar carteira de demonstraÃ§Ã£o'}</button>
-                {walletMutation.error && <p className="checkout-inline-error" role="alert">{walletMutation.error instanceof ApiError ? walletMutation.error.message : 'NÃ£o foi possÃ­vel adicionar a carteira.'}</p>}
+                <Link className="checkout-secondary-button" to="/wallets"><WalletIcon />{walletsQuery.data?.length ? 'Gerenciar carteiras' : 'Adicionar carteira de demonstração'}</Link>
               </section>
               <section className="checkout-card"><div className="checkout-section-heading"><span>03</span><div><h2>Rede e cotaÃ§Ã£o</h2><p>O servidor valida novamente estoque e valores ao enviar.</p></div></div>
                 <label className="checkout-field">Rede<select value={network} onChange={(event) => setNetwork(event.target.value as EthNetwork)}>{networkOptions.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}</select></label>

@@ -2,7 +2,7 @@
 
 Solução do desafio frontend (React + TypeScript + TanStack Router/Query + Axios + MSW + Socket.IO + Tailwind + shadcn/ui + Playwright + Lighthouse).
 
-> Status: **etapa 3 concluída** (contratos de catálogo, fixtures e handlers MSW de catálogo/detalhe). A interface entra nas próximas etapas.
+> Status: implementação de catálogo, autenticação, favoritos, carrinho, checkout, pedidos, perfil e carteiras de demonstração.
 
 ## Setup
 
@@ -47,3 +47,12 @@ As imagens são SVGs determinísticos servidos pelo próprio MSW em `/nft-art/:i
 
 - VITE_MOCK_SCENARIO=cart-resilience adiciona 900 ms de latencia as operacoes de carrinho e cotacao; cart-failure retorna 503 nesses endpoints.
 - KURIO10 aplica 10% de desconto; KURIOEXPIRED exercita cupom expirado. Outros codigos sao invalidos.
+
+## Perfil e carteiras
+
+- Acesse Perfil, Pedidos e Carteiras ap�s entrar. O perfil permite editar nome de exibi��o, usu�rio, e-mail e ENS.
+- Pedidos e carteiras s�o mocks MSW isolados pelo ID da conta autenticada; o checkout seleciona por padr�o a carteira marcada como principal.
+- Cen�rios reproduz�veis adicionais: `VITE_MOCK_SCENARIO=account-resilience` aplica lat�ncia �s opera��es da conta e `account-failure` retorna falha transit�ria.
+- Carteiras s�o apenas registros de demonstra��o; n�o h� conex�o real nem transa��es.
+
+\n- Perfil e carteiras foram implementados com os tokens Kurio existentes. N�o houve compara��o visual direta com os frames do Figma nesta etapa.\n

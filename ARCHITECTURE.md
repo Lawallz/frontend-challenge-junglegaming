@@ -59,9 +59,18 @@
 - `GET /nfts` filtra por `q`, `tab`, `collection` repetido, preços ETH, `network` repetido e ordenação; só depois pagina. Empates usam id como chave estável. `total` e `totalPages` refletem o resultado filtrado. `GET /nfts/:id` resolve ID direto; item ausente retorna 404 `NOT_FOUND`.
 - Axios usa `serializeNftListQuery` para arrays do catálogo; MSW usa o parser correspondente. Coleções/redes são deduplicadas e ordenadas na serialização. Valores ETH inválidos e enums desconhecidos são omitidos; paginação inválida vira página 1 e tamanho 12 (tamanho válido: 1–100).
 - `VITE_MOCK_SCENARIO=catalog-default|catalog-resilience|catalog-failure` seleciona respostas sem latência, 350 ms de latência ou falha 503, respectivamente. `setMockScenario` e `resetMockScenario` permitem seleção/reset em testes ou demos; sem override, vale a configuração de ambiente.
-- A etapa não implementa UI, autenticação, carrinho, Socket.IO funcional ou checkout. Os handlers disponíveis cobrem apenas catálogo e assets.
+- O catálogo, autenticação, favoritos, carrinho, checkout, pedidos, perfil e carteiras estão implementados com dados de demonstração via MSW. Pagamento e conexão blockchain reais não fazem parte do projeto.
 
 ## Limitações conhecidas
 
-- Browsers do Playwright não foram baixados no ambiente de desenvolvimento; rodar `npx playwright install chromium` localmente. Nenhum teste E2E existe ainda.
+- Os testes E2E usam Playwright em Chromium desktop e mobile; instale os browsers com `npx playwright install chromium` se ainda não estiverem disponíveis.
 - Windows: os scripts usam `cross-env`, mas a execução foi verificada apenas em Linux.
+
+## Perfil, pedidos e carteiras
+
+- Perfil usa `GET/PUT /profile`; a atualiza��o valida unicidade de e-mail/usu�rio e atualiza tamb�m a sess�o em cache ap�s resposta confirmada.
+- `GET /orders` lista pedidos paginados do usu�rio autenticado. A consulta e o detalhe usam o prefixo de propriet�rio na chave do mock; IDs de outro usu�rio retornam 404.
+- Carteiras usam `GET/POST/DELETE /wallets` e `PATCH /wallets/:id/default`. O campo existente `role` representa a carteira padr�o (`primary`); ao remover a principal, a primeira restante � promovida.
+- Os cen�rios `account-resilience` e `account-failure` exercitam lat�ncia e falha nos endpoints de perfil. Nenhum segredo ou conex�o externa � usado.
+
+\n- Perfil e carteiras foram implementados com os tokens Kurio existentes. N�o houve compara��o visual direta com os frames do Figma nesta etapa.\n

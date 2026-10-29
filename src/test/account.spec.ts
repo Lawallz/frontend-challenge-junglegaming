@@ -1,0 +1,36 @@
+import {expect,test,type Page} from '@playwright/test'
+function email(){return `profile-${Date.now()}-${Math.random().toString(36).slice(2)}@kurio.art`}
+async function loginDemo(page:Page,returnTo='/profile'){await page.goto(`/login?returnTo=${encodeURIComponent(returnTo)}`);await page.getByLabel('E-mail').fill('demo@kurio.art');await page.getByLabel('Senha').fill('KurioDemo123!');await page.getByRole('button',{name:'Entrar na Kurio'}).click();await expect(page).toHaveURL(new RegExp(returnTo))}
+test('perfil protegido permite edição confirmada e logout limpa a sessão',async({page})=>{
+ await page.goto('/profile');await expect(page).toHaveURL(/\/login/)
+ await loginDemo(page)
+ await expect(page.getByRole('heading',{name:'Meu perfil'})).toBeVisible()
+ await page.getByLabel('Nome de exibição').fill('Colecionador Editado')
+ await page.getByLabel('Nome de usuário').fill('kurio-editado')
+ await page.getByLabel('Nome ENS (opcional)').fill('editado.eth')
+ await page.getByRole('button',{name:'Salvar alterações'}).click()
+ await expect(page.getByRole('status')).toContainText('Perfil atualizado')
+ await expect(page.locator('.account-card').first()).toContainText('Colecionador Editado')
+ await page.getByRole('button',{name:'Sair'}).click()
+ await expect(page).toHaveURL(/\/(?:\?.*)?$/)
+ await expect.poll(()=>page.evaluate(()=>sessionStorage.getItem('kurio:session-token'))).toBeNull()
+ await page.goto('/profile');await expect(page).toHaveURL(/\/login/)
+})
+test('carteiras validam, adicionam, definem padrão, removem e permanecem isoladas por conta',async({page})=>{
+ const username=`acct-${Date.now()}`,userEmail=email()
+ await page.goto('/register');await page.getByLabel('Nome de usuário').fill(username);await page.getByLabel('E-mail').fill(userEmail);await page.getByLabel('Senha',{exact:true}).fill('KurioPass123!');await page.getByLabel('Confirme sua senha').fill('KurioPass123!');await page.getByRole('button',{name:'Criar conta'}).click();await expect(page).toHaveURL(/\/(?:\?.*)?$/)
+ await page.goto('/wallets');await expect(page.getByRole('heading',{name:'Minhas carteiras'})).toBeVisible()
+ await page.getByLabel('Nome',{exact:true}).fill('Carteira um');await page.getByLabel('Endereço').fill('0x'+'1'.repeat(40));await page.getByRole('button',{name:'Adicionar carteira'}).click();await expect(page.getByText('Carteira um')).toBeVisible()
+ await page.getByLabel('Nome',{exact:true}).fill('Carteira dois');await page.getByLabel('Endereço').fill('0x'+'2'.repeat(40));await page.getByRole('button',{name:'Adicionar carteira'}).click();await expect(page.getByText('Carteira dois')).toBeVisible()
+ await page.getByRole('button',{name:'Definir padrão'}).click();await expect(page.locator('.account-default')).toHaveCount(1);await expect(page.locator('.account-wallet').filter({hasText:'Carteira dois'}).getByText('Padrão')).toBeVisible()
+ await page.locator('.account-wallet').filter({hasText:'Carteira dois'}).getByRole('button',{name:'Remover'}).click();await expect(page.getByText('Carteira dois')).toHaveCount(0);await expect(page.locator('.account-wallet').filter({hasText:'Carteira um'}).getByText('Padrão')).toBeVisible()
+ await page.getByRole('button',{name:'Sair'}).click();await loginDemo(page,'/wallets');await expect(page.getByRole('heading',{name:'Minhas carteiras'})).toBeVisible();await expect(page.getByText('Carteira um')).toHaveCount(0)
+})
+test('histórico trata lista vazia e abre a confirmação de um pedido próprio',async({page})=>{
+ await loginDemo(page,'/orders');await expect(page.getByText('Você ainda não fez pedidos')).toBeVisible()
+ await page.goto('/nft/nft-005');await page.getByLabel('Edição').selectOption('nft-005-edition-2');await page.getByRole('button',{name:'Adicionar ao carrinho'}).click();await expect(page.getByText('Item adicionado ao carrinho.')).toBeVisible()
+ await page.goto('/checkout');await expect(page.getByRole('heading',{name:'Finalizar pedido'})).toBeVisible()
+  await page.goto('/wallets');await page.getByLabel('Nome',{exact:true}).fill('Carteira do histórico');await page.getByLabel('Endereço').fill('0x'+'3'.repeat(40));const response=page.waitForResponse(x=>x.url().includes('/wallets')&&x.request().method()==='POST');await page.getByRole('button',{name:'Adicionar carteira'}).click();expect((await response).status()).toBe(201);await page.goto('/checkout')
+ await page.getByRole('button',{name:'Confirmar pedido'}).click();await expect(page.getByRole('heading',{name:'Seu pedido foi recebido'})).toBeVisible()
+ await page.goto('/orders');await expect(page.locator('.account-order')).toHaveCount(1);await page.getByRole('link',{name:'Ver pedido'}).click();await expect(page.getByRole('heading',{name:'Seu pedido foi recebido'})).toBeVisible()
+})
